@@ -21,9 +21,11 @@ import com.example.incidentscompose.R
 import com.example.incidentscompose.ui.components.IncidentsTextField
 import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.viewmodel.AutoLoginState
+import com.example.incidentscompose.viewmodel.LoginUiState
 import com.example.incidentscompose.viewmodel.LoginState
 import com.example.incidentscompose.viewmodel.LoginViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
+
 
 @Composable
 fun LoginScreen(
@@ -32,30 +34,50 @@ fun LoginScreen(
     onNavigateToReport: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    val isBusy by viewModel.isBusy.collectAsState()
-    val loginState by viewModel.loginState.collectAsState()
-    val autoLoginState by viewModel.autoLoginState.collectAsState()
-
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    val isLoggingIn = remember { derivedStateOf {
-        loginState is LoginState.Loading || (isBusy && loginState !is LoginState.Error)
-    } }
+    val isBusy by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.checkAutoLogin()
     }
 
-    LaunchedEffect(autoLoginState) {
-        if (autoLoginState is AutoLoginState.TokenFound) {
+    LaunchedEffect(uiState.autoLoginState) {
+        if (uiState.autoLoginState is AutoLoginState.TokenFound) {
             onNavigateToIncidentList()
         }
     }
 
-    LaunchedEffect(loginState) {
-        if (loginState is LoginState.Success) {
+    LaunchedEffect(uiState.loginState) {
+        if (uiState.loginState is LoginState.Success) {
             onNavigateToIncidentList()
+        }
+    }
+
+    LoginContent(
+        uiState = uiState,
+        isBusy = isBusy,
+        onLogin = { u, p -> viewModel.login(u, p) },
+        onClearError = { viewModel.clearLoginState() },
+        onNavigateToReport = onNavigateToReport,
+        onNavigateToRegister = onNavigateToRegister,
+    )
+}
+
+@Composable
+fun LoginContent(
+    uiState: LoginUiState,
+    isBusy: Boolean,
+    onLogin: (String, String) -> Unit,
+    onClearError: () -> Unit,
+    onNavigateToReport: () -> Unit,
+    onNavigateToRegister: () -> Unit,
+) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    val isLoggingIn = remember {
+        derivedStateOf {
+            uiState.loginState is LoginState.Loading || (isBusy && uiState.loginState !is LoginState.Error)
         }
     }
 
@@ -95,12 +117,12 @@ fun LoginScreen(
                         value = username,
                         onValueChange = {
                             username = it
-                            if (loginState is LoginState.Error) {
-                                viewModel.clearLoginState()
+                            if (uiState.loginState is LoginState.Error) {
+                                onClearError()
                             }
                         },
                         placeholder = stringResource(R.string.username),
-                        isError = loginState is LoginState.Error
+                        isError = uiState.loginState is LoginState.Error
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -109,20 +131,20 @@ fun LoginScreen(
                         value = password,
                         onValueChange = {
                             password = it
-                            if (loginState is LoginState.Error) {
-                                viewModel.clearLoginState()
+                            if (uiState.loginState is LoginState.Error) {
+                                onClearError()
                             }
                         },
                         placeholder = stringResource(R.string.password),
                         isPassword = true,
-                        isError = loginState is LoginState.Error
+                        isError = uiState.loginState is LoginState.Error
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    if (loginState is LoginState.Error) {
+                    if (uiState.loginState is LoginState.Error) {
                         Text(
-                            text = (loginState as LoginState.Error).message,
+                            text = uiState.loginState.message,
                             color = Color.Red,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,
@@ -132,9 +154,7 @@ fun LoginScreen(
                     }
 
                     Button(
-                        onClick = {
-                            viewModel.login(username, password)
-                        },
+                        onClick = { onLogin(username, password) },
                         shape = RoundedCornerShape(25.dp),
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoggingIn.value && username.isNotBlank() && password.isNotBlank()
@@ -173,7 +193,7 @@ fun LoginScreen(
         }
 
         LoadingOverlay(
-            isLoading = autoLoginState is AutoLoginState.Checking || isLoggingIn.value
+            isLoading = uiState.autoLoginState is AutoLoginState.Checking || isLoggingIn.value
         )
     }
 }

@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
 import com.example.incidentscompose.data.model.*
 import com.example.incidentscompose.data.repository.IncidentRepository
-import com.example.incidentscompose.ui.states.BaseViewModel
 import com.example.incidentscompose.util.PhotoUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

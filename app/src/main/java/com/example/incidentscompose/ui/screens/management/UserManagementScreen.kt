@@ -70,7 +70,7 @@ import com.example.incidentscompose.navigation.UserManagementKey
 import com.example.incidentscompose.ui.components.BottomNavBar
 import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.viewmodel.UserManagementViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun UserManagementScreen(
@@ -79,21 +79,17 @@ fun UserManagementScreen(
     onNavigateToIncidentMap: () -> Unit,
     viewModel: UserManagementViewModel = koinViewModel()
 ){
-    val unauthorizedState by viewModel.unauthorizedState.collectAsState()
-    val userRole by viewModel.userRole.collectAsState()
-    val users by viewModel.users.collectAsState()
-    val showLoadMore by viewModel.showLoadMore.collectAsState()
-    val isLoading by viewModel.isBusy.collectAsState()
-    val toastMessage by viewModel.toastMessage.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredUsers = remember(users, searchQuery) {
+    val filteredUsers = remember(uiState.users, searchQuery) {
         if (searchQuery.isBlank()) {
-            users
+            uiState.users
         } else {
-            users.filter { user ->
+            uiState.users.filter { user ->
                 user.username.contains(searchQuery, ignoreCase = true) ||
                         user.email.contains(searchQuery, ignoreCase = true) ||
                         user.role.name.contains(searchQuery, ignoreCase = true)
@@ -101,15 +97,15 @@ fun UserManagementScreen(
         }
     }
 
-    LaunchedEffect(unauthorizedState) {
-        if (unauthorizedState) {
+    LaunchedEffect(uiState.unauthorizedState) {
+        if (uiState.unauthorizedState) {
             onNavigateToMyIncidentList()
         }
     }
 
-    LaunchedEffect(toastMessage) {
-        if (toastMessage != null) {
-            android.widget.Toast.makeText(context, toastMessage, android.widget.Toast.LENGTH_SHORT).show()
+    LaunchedEffect(uiState.toastMessage) {
+        if (uiState.toastMessage != null) {
+            android.widget.Toast.makeText(context, uiState.toastMessage, android.widget.Toast.LENGTH_SHORT).show()
             viewModel.clearToastMessage()
         }
     }
@@ -120,7 +116,7 @@ fun UserManagementScreen(
         bottomBar = {
             BottomNavBar(
                 currentKey = UserManagementKey,
-                userRole = userRole,
+                userRole = uiState.userRole,
                 onNavigateTo = { route ->
                     when (route) {
                         IncidentListKey -> onNavigateToIncidentList()
@@ -190,7 +186,7 @@ fun UserManagementScreen(
                         }
 
                         item {
-                            if (showLoadMore && searchQuery.isBlank()) {
+                            if (uiState.showLoadMore && searchQuery.isBlank()) {
                                 Button(
                                     onClick = { viewModel.loadMoreUsers() },
                                     modifier = Modifier

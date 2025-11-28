@@ -49,7 +49,7 @@ import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisp
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.MyIncidentListViewModel
 import kotlinx.serialization.json.Json
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun MyIncidentListScreen(
@@ -63,13 +63,10 @@ fun MyIncidentListScreen(
     viewModel: MyIncidentListViewModel = koinViewModel(),
     backStack: NavBackStack<NavKey>
 ) {
-    val user by viewModel.user.collectAsState()
-    val incidents by viewModel.incidents.collectAsState()
-    val logoutEvent by viewModel.logoutEvent.collectAsState()
-    val isBusy by viewModel.isBusy.collectAsState()
-    var isDropdownVisible by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsState()
+    val userRole = uiState.userRole
     val context = LocalContext.current
-    val userRole by viewModel.userRole.collectAsState()
 
     LaunchedEffect(backStack) {
         snapshotFlow { backStack.lastOrNull() }
@@ -80,16 +77,16 @@ fun MyIncidentListScreen(
             }
     }
 
-    LaunchedEffect(logoutEvent) {
-        if (logoutEvent) {
+    LaunchedEffect(uiState.logoutEvent) {
+        if (uiState.logoutEvent) {
             onLogout()
             viewModel.resetLogoutEvent()
         }
     }
 
-    val fullName = user?.username ?: stringResource(R.string.loading)
-    val totalIncidents = incidents.size
-    val activeIncidents = incidents.count { it.status == Status.REPORTED || it.status == Status.RESOLVED }
+    val fullName = uiState.user?.username ?: stringResource(R.string.loading)
+    val totalIncidents = uiState.incidents.size
+    val activeIncidents = uiState.incidents.count { it.status == Status.REPORTED || it.status == Status.RESOLVED }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -112,294 +109,324 @@ fun MyIncidentListScreen(
             }
         }
     ) { paddingValues ->
+        MyIncidentListContent(
+            paddingValues = paddingValues,
+            uiState = uiState,
+            isBusy = isBusy,
+            onIncidentClick = { incident ->
+                viewModel.saveSelectedIncident(incident)
+                onNavigateToDetail()
+            },
+            onNavigateToReport = onNavigateToReport,
+            onNavigateToUserProfile = onNavigateToUserProfile,
+            onOpenLanguageSettings = {
+                val intent = Intent(Settings.ACTION_LOCALE_SETTINGS)
+                context.startActivity(intent)
+            },
+            onLogout = { viewModel.logout() },
+            onRefresh = { viewModel.refreshIncidents() }
+        )
+    }
+}
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+@Composable
+private fun MyIncidentListContent(
+    paddingValues: PaddingValues,
+    uiState: com.example.incidentscompose.viewmodel.MyIncidentListUiState,
+    isBusy: Boolean,
+    onIncidentClick: (com.example.incidentscompose.data.model.IncidentResponse) -> Unit,
+    onNavigateToReport: () -> Unit,
+    onNavigateToUserProfile: (String) -> Unit,
+    onOpenLanguageSettings: () -> Unit,
+    onLogout: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    val fullName = uiState.user?.username ?: stringResource(R.string.loading)
+    val totalIncidents = uiState.incidents.size
+    val activeIncidents = uiState.incidents.count { it.status == Status.REPORTED || it.status == Status.RESOLVED }
+
+    var isDropdownVisible by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF0D47A1),
+                                Color(0xFF1976D2)
+                            )
+                        )
+                    )
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = CircleShape,
+                                ambientColor = Color.Black.copy(alpha = 0.2f)
+                            )
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "User Avatar",
+                            tint = Color(0xFF0D47A1),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
 
-            Column(
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 15.dp)
+                    ) {
+                        Text(
+                            text = fullName,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = stringResource(R.string.account_dashboard),
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .clickable { isDropdownVisible = !isDropdownVisible },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(15.dp)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = stringResource(R.string.total_incidents),
+                    value = totalIncidents.toString(),
+                    valueColor = Color(0xFF0D47A1)
+                )
+
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = stringResource(R.string.active),
+                    value = activeIncidents.toString(),
+                    valueColor = Color(0xFFFF6B35)
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.my_incidents),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 0.dp)
+            )
+
+            PullToRefreshBox(
+                isRefreshing = isBusy,
+                onRefresh = onRefresh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                if (uiState.incidents.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.no_incidents_found),
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(15.dp),
+                        contentPadding = PaddingValues(vertical = 15.dp)
+                    ) {
+                        items(uiState.incidents) { incident ->
+                            IncidentCard(
+                                incident = incident,
+                                onClick = { onIncidentClick(incident) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { onNavigateToReport() },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 20.dp, end = 20.dp),
+            containerColor = Color(0xFF0D47A1),
+            shape = CircleShape
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.create_incident),
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        if (isDropdownVisible) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clickable { isDropdownVisible = false }
+            )
+        }
+
+        AnimatedVisibility(
+            visible = isDropdownVisible,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -20 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -20 }),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 80.dp, end = 20.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .width(200.dp)
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF0D47A1),
-                                    Color(0xFF1976D2)
+                Column {
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.userprofile),
+                                    contentDescription = "User profile",
+                                    modifier = Modifier.size(20.dp)
                                 )
-                            )
-                        )
-                        .padding(20.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(60.dp)
-                                .shadow(
-                                    elevation = 4.dp,
-                                    shape = CircleShape,
-                                    ambientColor = Color.Black.copy(alpha = 0.2f)
-                                )
-                                .clip(CircleShape)
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "User Avatar",
-                                tint = Color(0xFF0D47A1),
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 15.dp)
-                        ) {
-                            Text(
-                                text = fullName,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = stringResource(R.string.account_dashboard),
-                                fontSize = 14.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .clickable { isDropdownVisible = !isDropdownVisible },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(15.dp)
-                ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = stringResource(R.string.total_incidents),
-                        value = totalIncidents.toString(),
-                        valueColor = Color(0xFF0D47A1)
-                    )
-
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = stringResource(R.string.active),
-                        value = activeIncidents.toString(),
-                        valueColor = Color(0xFFFF6B35)
-                    )
-                }
-
-                Text(
-                    text = stringResource(R.string.my_incidents),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 0.dp)
-                )
-
-                PullToRefreshBox(
-                    isRefreshing = isBusy,
-                    onRefresh = { viewModel.refreshIncidents() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    if (incidents.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_incidents_found),
-                                color = Color.Gray,
-                                fontSize = 16.sp
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp),
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            contentPadding = PaddingValues(vertical = 15.dp)
-                        ) {
-                            items(incidents) { incident ->
-                                IncidentCard(
-                                    incident = incident,
-                                    onClick = {
-                                        viewModel.saveSelectedIncident(incident)
-                                        onNavigateToDetail()
-                                    }
+                                Text(
+                                    stringResource(R.string.profile),
+                                    color = Color.Black,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
-                        }
-                    }
+                        },
+                        onClick = {
+                            isDropdownVisible = false
+                            uiState.user?.let { userData ->
+                                val userJson = Json.encodeToString(userData)
+                                onNavigateToUserProfile(userJson)
+                            }
+                        },
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.language),
+                                    contentDescription = "Language settings",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    stringResource(R.string.language),
+                                    color = Color.Black,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        },
+                        onClick = {
+                            isDropdownVisible = false
+                            onOpenLanguageSettings()
+                        },
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.logout),
+                                    contentDescription = "Logout",
+                                    tint = Color(0xFFD32F2F),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    stringResource(R.string.logout),
+                                    color = Color(0xFFD32F2F),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        },
+                        onClick = {
+                            isDropdownVisible = false
+                            onLogout()
+                        },
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
                 }
             }
-
-            FloatingActionButton(
-                onClick = { onNavigateToReport() },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 20.dp, end = 20.dp),
-                containerColor = Color(0xFF0D47A1),
-                shape = CircleShape
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.create_incident),
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            if (isDropdownVisible) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable { isDropdownVisible = false }
-                )
-            }
-
-            AnimatedVisibility(
-                visible = isDropdownVisible,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { -20 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { -20 }),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 80.dp, end = 20.dp)
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(12.dp)
-                        ),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White
-                ) {
-                    Column {
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.userprofile),
-                                        contentDescription = "User profile",
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        stringResource(R.string.profile),
-                                        color = Color.Black,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            },
-                            onClick = {
-                                isDropdownVisible = false
-                                user?.let { userData ->
-                                    val userJson = Json.encodeToString(userData)
-                                    onNavigateToUserProfile(userJson)
-                                }
-                            },
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-
-                        HorizontalDivider(color = Color(0xFFEEEEEE))
-
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.language),
-                                        contentDescription = "Language settings",
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        stringResource(R.string.language),
-                                        color = Color.Black,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            },
-                            onClick = {
-                                isDropdownVisible = false
-                                val intent = Intent(Settings.ACTION_LOCALE_SETTINGS)
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-
-                        HorizontalDivider(color = Color(0xFFEEEEEE))
-
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.logout),
-                                        contentDescription = "Logout",
-                                        tint = Color(0xFFD32F2F),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        stringResource(R.string.logout),
-                                        color = Color(0xFFD32F2F),
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            },
-                            onClick = {
-                                isDropdownVisible = false
-                                viewModel.logout()
-                            },
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-
-            LoadingOverlay(isLoading = isBusy)
         }
+
+        LoadingOverlay(isLoading = isBusy)
     }
 }
 

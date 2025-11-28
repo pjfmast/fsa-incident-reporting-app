@@ -1,17 +1,37 @@
 package com.example.incidentscompose.ui.screens.management
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.example.incidentscompose.data.model.IncidentCategory
+import com.example.incidentscompose.data.model.IncidentResponse
+import com.example.incidentscompose.data.model.Priority
+import com.example.incidentscompose.data.model.Role
+import com.example.incidentscompose.data.model.Status
 import com.example.incidentscompose.navigation.IncidentListKey
 import com.example.incidentscompose.navigation.IncidentMapKey
 import com.example.incidentscompose.navigation.MyIncidentListKey
 import com.example.incidentscompose.navigation.UserManagementKey
-import com.example.incidentscompose.ui.components.*
+import com.example.incidentscompose.ui.components.BottomNavBar
+import com.example.incidentscompose.ui.components.FilterDialog
+import com.example.incidentscompose.ui.components.IncidentMap
+import com.example.incidentscompose.ui.components.LoadingOverlay
+import com.example.incidentscompose.ui.components.SearchAndFilterBar
 import com.example.incidentscompose.viewmodel.IncidentManagementViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IncidentMapScreen(
@@ -21,18 +41,61 @@ fun IncidentMapScreen(
     onNavigateToUserManagement: () -> Unit,
     viewModel: IncidentManagementViewModel = koinViewModel()
 ) {
-    val unauthorizedState by viewModel.unauthorizedState.collectAsState()
-    val userRole by viewModel.userRole.collectAsState()
-    val isLoading by viewModel.isBusy.collectAsState()
-    val filteredIncidents by viewModel.filteredIncidents.collectAsState()
-
-    var showFilterDialog by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+    val unauthorizedState = uiState.unauthorizedState
+    val userRole = uiState.userRole
+    val isLoading by viewModel.isLoading.collectAsState()
+    val filteredIncidents = uiState.filteredIncidents
+    val hasActiveFilters by remember { derivedStateOf { viewModel.hasActiveFilters } }
 
     LaunchedEffect(unauthorizedState) {
         if (unauthorizedState) {
             onNavigateToMyIncidentList()
         }
     }
+
+    IncidentMapContent(
+        userRole = userRole,
+        incidents = filteredIncidents,
+        isLoading = isLoading,
+        hasActiveFilters = hasActiveFilters,
+        searchQuery = uiState.searchQuery,
+        onSearchQueryChange = { q -> viewModel.updateSearchQuery(q) },
+        selectedPriority = uiState.selectedPriorityFilter,
+        selectedStatus = uiState.selectedStatusFilter,
+        selectedCategory = uiState.selectedCategoryFilter,
+        onUpdatePriority = { viewModel.updatePriorityFilter(it) },
+        onUpdateStatus = { viewModel.updateStatusFilter(it) },
+        onUpdateCategory = { viewModel.updateCategoryFilter(it) },
+        onClearAllFilters = { viewModel.clearAllFilters() },
+        onIncidentClick = { onNavigateToDetail(it.id) },
+        onNavigateToIncidentList = onNavigateToIncidentList,
+        onNavigateToUserManagement = onNavigateToUserManagement,
+        onNavigateToMyIncidentList = onNavigateToMyIncidentList,
+    )
+}
+
+@Composable
+private fun IncidentMapContent(
+    userRole: Role?,
+    incidents: List<IncidentResponse>,
+    isLoading: Boolean,
+    hasActiveFilters: Boolean,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedPriority: Set<Priority>,
+    selectedStatus: Set<Status>,
+    selectedCategory: Set<IncidentCategory>,
+    onUpdatePriority: (Set<Priority>) -> Unit,
+    onUpdateStatus: (Set<Status>) -> Unit,
+    onUpdateCategory: (Set<IncidentCategory>) -> Unit,
+    onClearAllFilters: () -> Unit,
+    onIncidentClick: (IncidentResponse) -> Unit,
+    onNavigateToIncidentList: () -> Unit,
+    onNavigateToUserManagement: () -> Unit,
+    onNavigateToMyIncidentList: () -> Unit,
+) {
+    var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -58,7 +121,9 @@ fun IncidentMapScreen(
                 .padding(paddingValues)
         ) {
             SearchAndFilterBar(
-                viewModel = viewModel,
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                hasActiveFilters = hasActiveFilters,
                 onFilterClick = { showFilterDialog = true }
             )
 
@@ -69,14 +134,12 @@ fun IncidentMapScreen(
             ) {
                 IncidentMap(
                     modifier = Modifier.fillMaxSize(),
-                    incidents = filteredIncidents,
+                    incidents = incidents,
                     isLocationSelectionEnabled = false,
                     allowDetailNavigation = true,
-                    onIncidentClick = { incident ->
-                        onNavigateToDetail(incident.id)
-                    },
+                    onIncidentClick = onIncidentClick,
                     onLocationSelected = { _, _ -> },
-                    onMapTouch = {  }
+                    onMapTouch = { }
                 )
             }
 
@@ -85,7 +148,13 @@ fun IncidentMapScreen(
 
         if (showFilterDialog) {
             FilterDialog(
-                viewModel = viewModel,
+                selectedPriority = selectedPriority,
+                selectedStatus = selectedStatus,
+                selectedCategory = selectedCategory,
+                onUpdatePriority = onUpdatePriority,
+                onUpdateStatus = onUpdateStatus,
+                onUpdateCategory = onUpdateCategory,
+                onClearAll = onClearAllFilters,
                 onDismiss = { showFilterDialog = false }
             )
         }

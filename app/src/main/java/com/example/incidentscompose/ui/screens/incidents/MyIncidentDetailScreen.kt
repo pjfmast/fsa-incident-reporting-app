@@ -43,7 +43,7 @@ import com.example.incidentscompose.util.IncidentDisplayHelper.formatCategoryTex
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisplay
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.MyIncidentDetailViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun MyIncidentDetailScreen(
@@ -61,9 +61,8 @@ fun MyIncidentDetailScreen(
 
     val context = LocalContext.current
     val selectedIncidentFlow = viewModel.selectedIncident
-    val isBusy by viewModel.isBusy.collectAsState()
-    val updateResult by viewModel.updateResult.collectAsState()
-    val deleteResult by viewModel.deleteResult.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     // Collect incident from the flow
     LaunchedEffect(Unit) {
@@ -81,8 +80,8 @@ fun MyIncidentDetailScreen(
     val successUpdateMessage = stringResource(R.string.incident_updated_successfully)
     val failureUpdateMessage = stringResource(R.string.failed_to_update_incident)
 
-    LaunchedEffect(updateResult) {
-        updateResult?.let { result ->
+    LaunchedEffect(uiState.updateResult) {
+        uiState.updateResult?.let { result ->
             if (result is ApiResult.Success) {
                 Toast.makeText(context, successUpdateMessage, Toast.LENGTH_LONG).show()
             } else {
@@ -107,8 +106,8 @@ fun MyIncidentDetailScreen(
     val successDeleteMessage = stringResource(R.string.incident_deleted_successfully)
     val failureDeleteMessage = stringResource(R.string.failed_to_delete_incident)
 
-    LaunchedEffect(deleteResult) {
-        deleteResult?.let { result ->
+    LaunchedEffect(uiState.deleteResult) {
+        uiState.deleteResult?.let { result ->
             if (result is ApiResult.Success) {
                 Toast.makeText(context, successDeleteMessage, Toast.LENGTH_LONG).show()
                 onNavigateBack()

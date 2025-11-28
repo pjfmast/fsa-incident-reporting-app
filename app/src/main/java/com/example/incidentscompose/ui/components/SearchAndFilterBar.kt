@@ -21,17 +21,14 @@ import com.example.incidentscompose.R
 import com.example.incidentscompose.data.model.Priority
 import com.example.incidentscompose.data.model.Status
 import com.example.incidentscompose.data.model.IncidentCategory
-import com.example.incidentscompose.util.IncidentDisplayHelper
-import com.example.incidentscompose.viewmodel.IncidentManagementViewModel
-import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun SearchAndFilterBar(
-    viewModel: IncidentManagementViewModel,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    hasActiveFilters: Boolean,
     onFilterClick: () -> Unit
 ) {
-    val hasActiveFilters by remember { derivedStateOf { viewModel.hasActiveFilters } }
-
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -49,7 +46,10 @@ fun SearchAndFilterBar(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                SearchTextField(viewModel = viewModel)
+                SearchTextField(
+                    query = query,
+                    onQueryChange = onQueryChange
+                )
             }
 
             FilterIconButton(
@@ -62,13 +62,12 @@ fun SearchAndFilterBar(
 
 @Composable
 private fun SearchTextField(
-    viewModel: IncidentManagementViewModel
+    query: String,
+    onQueryChange: (String) -> Unit
 ) {
-    val searchQuery by viewModel.searchQuery.collectAsState()
-
     OutlinedTextField(
-        value = searchQuery,
-        onValueChange = { viewModel.updateSearchQuery(it) },
+        value = query,
+        onValueChange = onQueryChange,
         modifier = Modifier.fillMaxWidth(),
         placeholder = { Text(stringResource(R.string.search_incidents)) },
         leadingIcon = {
@@ -108,14 +107,27 @@ private fun FilterIconButton(
 
 @Composable
 fun FilterDialog(
-    viewModel: IncidentManagementViewModel,
+    selectedPriority: Set<Priority>,
+    selectedStatus: Set<Status>,
+    selectedCategory: Set<IncidentCategory>,
+    onUpdatePriority: (Set<Priority>) -> Unit,
+    onUpdateStatus: (Set<Status>) -> Unit,
+    onUpdateCategory: (Set<IncidentCategory>) -> Unit,
+    onClearAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.filter_incidents)) },
         text = {
-            FilterDialogContent(viewModel = viewModel)
+            FilterDialogContent(
+                selectedPriority = selectedPriority,
+                selectedStatus = selectedStatus,
+                selectedCategory = selectedCategory,
+                onUpdatePriority = onUpdatePriority,
+                onUpdateStatus = onUpdateStatus,
+                onUpdateCategory = onUpdateCategory
+            )
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
@@ -124,7 +136,7 @@ fun FilterDialog(
         },
         dismissButton = {
             TextButton(onClick = {
-                viewModel.clearAllFilters()
+                onClearAll()
                 onDismiss()
             }) {
                 Text(stringResource(R.string.clear_all))
@@ -135,7 +147,12 @@ fun FilterDialog(
 
 @Composable
 private fun FilterDialogContent(
-    viewModel: IncidentManagementViewModel
+    selectedPriority: Set<Priority>,
+    selectedStatus: Set<Status>,
+    selectedCategory: Set<IncidentCategory>,
+    onUpdatePriority: (Set<Priority>) -> Unit,
+    onUpdateStatus: (Set<Status>) -> Unit,
+    onUpdateCategory: (Set<IncidentCategory>) -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -144,8 +161,8 @@ private fun FilterDialogContent(
         FilterSection(
             title = stringResource(R.string.priority_lowercase),
             options = Priority.entries,
-            selectedOptionsFlow = viewModel.selectedPriorityFilter,
-            onOptionsSelected = { viewModel.updatePriorityFilter(it.toSet()) }
+            selectedOptions = selectedPriority,
+            onOptionsSelected = { onUpdatePriority(it.toSet()) }
         )
 
         HorizontalDivider()
@@ -153,8 +170,8 @@ private fun FilterDialogContent(
         FilterSection(
             title = stringResource(R.string.status_lowercase),
             options = Status.entries,
-            selectedOptionsFlow = viewModel.selectedStatusFilter,
-            onOptionsSelected = { viewModel.updateStatusFilter(it.toSet()) }
+            selectedOptions = selectedStatus,
+            onOptionsSelected = { onUpdateStatus(it.toSet()) }
         )
 
         HorizontalDivider()
@@ -162,8 +179,8 @@ private fun FilterDialogContent(
         FilterSection(
             title = stringResource(R.string.category_lowercase),
             options = IncidentCategory.entries,
-            selectedOptionsFlow = viewModel.selectedCategoryFilter,
-            onOptionsSelected = { viewModel.updateCategoryFilter(it.toSet()) }
+            selectedOptions = selectedCategory,
+            onOptionsSelected = { onUpdateCategory(it.toSet()) }
         )
     }
 }
@@ -172,11 +189,9 @@ private fun FilterDialogContent(
 private fun <T : Enum<T>> FilterSection(
     title: String,
     options: List<T>,
-    selectedOptionsFlow: StateFlow<Set<T>>,
+    selectedOptions: Set<T>,
     onOptionsSelected: (List<T>) -> Unit
 ) {
-    val selectedOptions by selectedOptionsFlow.collectAsState()
-
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall,

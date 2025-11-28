@@ -21,26 +21,21 @@ import com.example.incidentscompose.ui.components.IncidentsTextField
 import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.viewmodel.RegisterState
 import com.example.incidentscompose.viewmodel.RegisterViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = koinViewModel()
 ) {
-    val isBusy by viewModel.isBusy.collectAsState()
-    val registerState by viewModel.registerState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
 
     val registrationSuccessMessage = stringResource(R.string.registration_successful_you_can_now_log_in)
 
-    LaunchedEffect(registerState) {
-        when (registerState) {
+    LaunchedEffect(uiState.state) {
+        when (uiState.state) {
             is RegisterState.Success -> {
                 Toast.makeText(
                     context,
@@ -54,6 +49,30 @@ fun RegisterScreen(
             }
         }
     }
+
+    RegisterContent(
+        isBusy = isBusy,
+        uiState = uiState,
+        onRegister = { username, password, email, confirmPassword ->
+            viewModel.register(username, password, email, confirmPassword)
+        },
+        onClearError = { viewModel.clearRegisterState() },
+        onNavigateToLogin = onNavigateToLogin
+    )
+}
+
+@Composable
+private fun RegisterContent(
+    isBusy: Boolean,
+    uiState: com.example.incidentscompose.viewmodel.RegisterUiState,
+    onRegister: (String, String, String, String) -> Unit,
+    onClearError: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -92,12 +111,12 @@ fun RegisterScreen(
                         value = username,
                         onValueChange = {
                             username = it
-                            if (registerState is RegisterState.Error) {
-                                viewModel.clearRegisterState()
+                            if (uiState.state is RegisterState.Error) {
+                                onClearError()
                             }
                         },
                         placeholder = stringResource(R.string.username),
-                        isError = registerState is RegisterState.Error
+                        isError = uiState.state is RegisterState.Error
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -106,12 +125,12 @@ fun RegisterScreen(
                         value = email,
                         onValueChange = {
                             email = it
-                            if (registerState is RegisterState.Error) {
-                                viewModel.clearRegisterState()
+                            if (uiState.state is RegisterState.Error) {
+                                onClearError()
                             }
                         },
                         placeholder = stringResource(R.string.email),
-                        isError = registerState is RegisterState.Error
+                        isError = uiState.state is RegisterState.Error
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -120,13 +139,13 @@ fun RegisterScreen(
                         value = password,
                         onValueChange = {
                             password = it
-                            if (registerState is RegisterState.Error) {
-                                viewModel.clearRegisterState()
+                            if (uiState.state is RegisterState.Error) {
+                                onClearError()
                             }
                         },
                         placeholder = stringResource(R.string.password),
                         isPassword = true,
-                        isError = registerState is RegisterState.Error
+                        isError = uiState.state is RegisterState.Error
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -135,21 +154,21 @@ fun RegisterScreen(
                         value = confirmPassword,
                         onValueChange = {
                             confirmPassword = it
-                            if (registerState is RegisterState.Error) {
-                                viewModel.clearRegisterState()
+                            if (uiState.state is RegisterState.Error) {
+                                onClearError()
                             }
                         },
                         placeholder = stringResource(R.string.confirm_password),
                         isPassword = true,
-                        isError = registerState is RegisterState.Error
+                        isError = uiState.state is RegisterState.Error
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    when (registerState) {
+                    when (uiState.state) {
                         is RegisterState.Error -> {
                             Text(
-                                text = (registerState as RegisterState.Error).message,
+                                text = uiState.state.message,
                                 color = Color.Red,
                                 fontSize = 14.sp,
                                 textAlign = TextAlign.Center,
@@ -164,7 +183,7 @@ fun RegisterScreen(
 
                     Button(
                         onClick = {
-                            viewModel.register(username, password, email, confirmPassword)
+                            onRegister(username, password, email, confirmPassword)
                         },
                         shape = RoundedCornerShape(25.dp),
                         modifier = Modifier.fillMaxWidth(),

@@ -31,7 +31,7 @@ import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.ui.components.SearchAndFilterBar
 import com.example.incidentscompose.util.IncidentDisplayHelper
 import com.example.incidentscompose.viewmodel.IncidentManagementViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.SwipeToDismissBox
@@ -47,11 +47,12 @@ fun IncidentListScreen(
     onNavigateToMyIncidentList: () -> Unit,
     viewModel: IncidentManagementViewModel = koinViewModel()
 ) {
-    val unauthorizedState by viewModel.unauthorizedState.collectAsState()
-    val userRole by viewModel.userRole.collectAsState()
-    val isLoading by viewModel.isBusy.collectAsState()
-    val filteredIncidents by viewModel.filteredIncidents.collectAsState()
-    val showLoadMore by viewModel.showLoadMore.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val unauthorizedState = uiState.unauthorizedState
+    val userRole = uiState.userRole
+    val isLoading by viewModel.isLoading.collectAsState()
+    val filteredIncidents = uiState.filteredIncidents
+    val showLoadMore = uiState.showLoadMore
 
     var showFilterMenu by remember { mutableStateOf(false) }
 
@@ -92,7 +93,9 @@ fun IncidentListScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 SearchAndFilterBar(
-                    viewModel = viewModel,
+                    query = uiState.searchQuery,
+                    onQueryChange = { viewModel.updateSearchQuery(it) },
+                    hasActiveFilters = viewModel.hasActiveFilters,
                     onFilterClick = { showFilterMenu = true }
                 )
 
@@ -147,7 +150,13 @@ fun IncidentListScreen(
 
     if (showFilterMenu) {
         FilterDialog(
-            viewModel = viewModel,
+            selectedPriority = uiState.selectedPriorityFilter,
+            selectedStatus = uiState.selectedStatusFilter,
+            selectedCategory = uiState.selectedCategoryFilter,
+            onUpdatePriority = { viewModel.updatePriorityFilter(it) },
+            onUpdateStatus = { viewModel.updateStatusFilter(it) },
+            onUpdateCategory = { viewModel.updateCategoryFilter(it) },
+            onClearAll = { viewModel.clearAllFilters() },
             onDismiss = { showFilterMenu = false }
         )
     }

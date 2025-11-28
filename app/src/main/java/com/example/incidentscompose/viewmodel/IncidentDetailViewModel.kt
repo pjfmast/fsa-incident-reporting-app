@@ -5,12 +5,20 @@ import com.example.incidentscompose.data.model.*
 import com.example.incidentscompose.data.repository.IncidentRepository
 import com.example.incidentscompose.data.repository.UserRepository
 import com.example.incidentscompose.data.store.TokenPreferences
-import com.example.incidentscompose.ui.states.BaseViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+data class IncidentDetailUiState(
+    val userRole: Role? = null,
+    val currentIncident: IncidentResponse? = null,
+    val reportedUser: UserResponse? = null,
+    val userFetchTimeout: Boolean = false,
+    val unauthorizedState: Boolean = false,
+    val toastMessage: String? = null
+)
 
 class IncidentDetailViewModel(
     private val incidentRepository: IncidentRepository,
@@ -18,22 +26,8 @@ class IncidentDetailViewModel(
     private val userRepository: UserRepository
 ) : BaseViewModel() {
 
-    private val _userRole = MutableStateFlow<Role?>(null)
-
-    private val _currentIncident = MutableStateFlow<IncidentResponse?>(null)
-    val currentIncident: StateFlow<IncidentResponse?> = _currentIncident.asStateFlow()
-
-    private val _reportedUser = MutableStateFlow<UserResponse?>(null)
-    val reportedUser: StateFlow<UserResponse?> = _reportedUser.asStateFlow()
-
-    private val _userFetchTimeout = MutableStateFlow(false)
-    val userFetchTimeout: StateFlow<Boolean> = _userFetchTimeout.asStateFlow()
-
-    private val _unauthorizedState = MutableStateFlow(false)
-    val unauthorizedState: StateFlow<Boolean> = _unauthorizedState.asStateFlow()
-
-    private val _toastMessage = MutableStateFlow<String?>(null)
-    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+    private val _uiState = MutableStateFlow(IncidentDetailUiState())
+    val uiState: StateFlow<IncidentDetailUiState> = _uiState.asStateFlow()
 
     private var userFetchJob: Job? = null
 
@@ -43,7 +37,9 @@ class IncidentDetailViewModel(
 
     private fun loadUserRole() {
         viewModelScope.launch {
-            _userRole.value = tokenPreferences.getUserRole()
+            _uiState.value = _uiState.value.copy(
+                userRole = tokenPreferences.getUserRole()
+            )
         }
     }
 
@@ -53,45 +49,49 @@ class IncidentDetailViewModel(
                 when (val result = incidentRepository.getIncidentById(incidentId)) {
                     is ApiResult.Success -> {
                         val incident = result.data
-                        _currentIncident.value = incident
+                        _uiState.value = _uiState.value.copy(currentIncident = incident)
                         if (!incident.isAnonymous && incident.reportedBy != null) {
                             fetchReportedUser(incident.reportedBy)
                         }
                     }
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
-                    is ApiResult.HttpError -> _toastMessage.value =
-                        "Failed to load incident: ${result.message}"
-                    is ApiResult.NetworkError -> _toastMessage.value =
-                        "Network error: ${result.exception.message}"
-                    is ApiResult.Timeout -> _toastMessage.value =
-                        "Request timed out while loading incident."
-                    is ApiResult.Unknown -> _toastMessage.value =
-                        "Unexpected error occurred while loading incident."
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to load incident: ${result.message}"
+                    )
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Request timed out while loading incident."
+                    )
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Unexpected error occurred while loading incident."
+                    )
                 }
             }
         }
     }
 
     fun clearCurrentIncident() {
-        _currentIncident.value = null
+        _uiState.value = _uiState.value.copy(currentIncident = null)
         clearReportedUser()
     }
 
     fun fetchReportedUser(userId: Long) {
         userFetchJob?.cancel()
-        _userFetchTimeout.value = false
+        _uiState.value = _uiState.value.copy(userFetchTimeout = false)
 
         userFetchJob = viewModelScope.launch {
             withLoading {
                 when (val result = userRepository.getUserById(userId)) {
                     is ApiResult.Success -> {
-                        _reportedUser.value = result.data
+                        _uiState.value = _uiState.value.copy(reportedUser = result.data)
                     }
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
-                    is ApiResult.HttpError -> _userFetchTimeout.value = true
-                    is ApiResult.NetworkError -> _userFetchTimeout.value = true
-                    is ApiResult.Timeout -> _userFetchTimeout.value = true
-                    is ApiResult.Unknown -> _userFetchTimeout.value = true
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(userFetchTimeout = true)
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(userFetchTimeout = true)
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(userFetchTimeout = true)
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(userFetchTimeout = true)
                 }
             }
         }
@@ -99,8 +99,10 @@ class IncidentDetailViewModel(
 
     fun clearReportedUser() {
         userFetchJob?.cancel()
-        _reportedUser.value = null
-        _userFetchTimeout.value = false
+        _uiState.value = _uiState.value.copy(
+            reportedUser = null,
+            userFetchTimeout = false
+        )
     }
 
     fun updatePriority(incidentId: Long, priority: Priority) {
@@ -109,17 +111,21 @@ class IncidentDetailViewModel(
                 when (val result = incidentRepository.changeIncidentPriority(incidentId, priority)) {
                     is ApiResult.Success -> {
                         getIncidentById(incidentId)
-                        _toastMessage.value = "Priority updated successfully"
+                        _uiState.value = _uiState.value.copy(toastMessage = "Priority updated successfully")
                     }
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
-                    is ApiResult.HttpError -> _toastMessage.value =
-                        "Failed to update priority: ${result.message}"
-                    is ApiResult.NetworkError -> _toastMessage.value =
-                        "Network error: ${result.exception.message}"
-                    is ApiResult.Timeout -> _toastMessage.value =
-                        "Request timed out while updating priority."
-                    is ApiResult.Unknown -> _toastMessage.value =
-                        "Unexpected error occurred while updating priority."
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to update priority: ${result.message}"
+                    )
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Request timed out while updating priority."
+                    )
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Unexpected error occurred while updating priority."
+                    )
                 }
             }
         }
@@ -131,17 +137,21 @@ class IncidentDetailViewModel(
                 when (val result = incidentRepository.changeIncidentStatus(incidentId, status)) {
                     is ApiResult.Success -> {
                         getIncidentById(incidentId)
-                        _toastMessage.value = "Status updated successfully"
+                        _uiState.value = _uiState.value.copy(toastMessage = "Status updated successfully")
                     }
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
-                    is ApiResult.HttpError -> _toastMessage.value =
-                        "Failed to update status: ${result.message}"
-                    is ApiResult.NetworkError -> _toastMessage.value =
-                        "Network error: ${result.exception.message}"
-                    is ApiResult.Timeout -> _toastMessage.value =
-                        "Request timed out while updating status."
-                    is ApiResult.Unknown -> _toastMessage.value =
-                        "Unexpected error occurred while updating status."
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to update status: ${result.message}"
+                    )
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Request timed out while updating status."
+                    )
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Unexpected error occurred while updating status."
+                    )
                 }
             }
         }
@@ -151,16 +161,22 @@ class IncidentDetailViewModel(
         viewModelScope.launch {
             withLoading {
                 when (val result = incidentRepository.deleteIncident(incidentId)) {
-                    is ApiResult.Success -> _toastMessage.value = "Incident deleted successfully"
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
-                    is ApiResult.HttpError -> _toastMessage.value =
-                        "Failed to delete incident: ${result.message}"
-                    is ApiResult.NetworkError -> _toastMessage.value =
-                        "Network error: ${result.exception.message}"
-                    is ApiResult.Timeout -> _toastMessage.value =
-                        "Request timed out while deleting incident."
-                    is ApiResult.Unknown -> _toastMessage.value =
-                        "Unexpected error occurred while deleting incident."
+                    is ApiResult.Success -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Incident deleted successfully"
+                    )
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to delete incident: ${result.message}"
+                    )
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Request timed out while deleting incident."
+                    )
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Unexpected error occurred while deleting incident."
+                    )
                 }
             }
         }
@@ -176,24 +192,28 @@ class IncidentDetailViewModel(
                 when (val result = incidentRepository.updateIncident(incidentId, updateRequest)) {
                     is ApiResult.Success -> {
                         getIncidentById(incidentId)
-                        _toastMessage.value = "Location updated successfully"
+                        _uiState.value = _uiState.value.copy(toastMessage = "Location updated successfully")
                     }
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
-                    is ApiResult.HttpError -> _toastMessage.value =
-                        "Failed to update location: ${result.message}"
-                    is ApiResult.NetworkError -> _toastMessage.value =
-                        "Network error: ${result.exception.message}"
-                    is ApiResult.Timeout -> _toastMessage.value =
-                        "Request timed out while updating location."
-                    is ApiResult.Unknown -> _toastMessage.value =
-                        "Unexpected error occurred while updating location."
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to update location: ${result.message}"
+                    )
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Request timed out while updating location."
+                    )
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Unexpected error occurred while updating location."
+                    )
                 }
             }
         }
     }
 
     fun clearToastMessage() {
-        _toastMessage.value = null
+        _uiState.value = _uiState.value.copy(toastMessage = null)
     }
 
     override fun onCleared() {

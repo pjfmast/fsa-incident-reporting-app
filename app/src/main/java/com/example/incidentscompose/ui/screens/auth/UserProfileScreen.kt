@@ -18,7 +18,7 @@ import com.example.incidentscompose.ui.components.TopNavBar
 import com.example.incidentscompose.util.ChangeUserValidationHelper
 import com.example.incidentscompose.viewmodel.UserViewModel
 import kotlinx.serialization.json.Json
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import java.net.URLDecoder
 import android.widget.Toast
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +37,7 @@ fun UserProfileScreen(
             try {
                 val decodedJson = URLDecoder.decode(json, "UTF-8")
                 Json.decodeFromString<UserResponse>(decodedJson)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
@@ -50,9 +50,8 @@ fun UserProfileScreen(
         return
     }
 
-    val isBusy by viewModel.isBusy.collectAsState()
-    val updateSuccess by viewModel.updateSuccess.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     var username by remember { mutableStateOf(initialUser.username) }
     var email by remember { mutableStateOf(initialUser.email) }
@@ -61,16 +60,16 @@ fun UserProfileScreen(
     var confirmPassword by remember { mutableStateOf("") }
 
     val updateProfileSuccessMessage = stringResource(R.string.profile_updated_successfully)
-    LaunchedEffect(updateSuccess) {
-        if (updateSuccess) {
+    LaunchedEffect(uiState.updateSuccess) {
+        if (uiState.updateSuccess) {
             Toast.makeText(context,
                 updateProfileSuccessMessage, Toast.LENGTH_LONG).show()
             onNavigateBack()
         }
     }
 
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             viewModel.resetUpdateState()
         }

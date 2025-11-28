@@ -3,29 +3,32 @@ package com.example.incidentscompose.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.incidentscompose.data.model.ApiResult
 import com.example.incidentscompose.data.repository.AuthRepository
-import com.example.incidentscompose.ui.states.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class LoginUiState(
+    val loginState: LoginState = LoginState.Idle,
+    val autoLoginState: AutoLoginState = AutoLoginState.Checking
+)
 
 class LoginViewModel(
     private val repository: AuthRepository
 ) : BaseViewModel() {
 
-    private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
-    val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
-
-    private val _autoLoginState = MutableStateFlow<AutoLoginState>(AutoLoginState.Checking)
-    val autoLoginState: StateFlow<AutoLoginState> = _autoLoginState.asStateFlow()
+    // Consolidated uiState
+    private val _uiState = MutableStateFlow(LoginUiState())
+    val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun login(username: String, password: String) {
         if (username.isBlank() || password.isBlank()) {
-            _loginState.value = LoginState.Error("Please enter both username and password")
+            _uiState.update { it.copy(loginState = LoginState.Error("Please enter both username and password")) }
             return
         }
 
-        _loginState.value = LoginState.Loading
+        _uiState.update { it.copy(loginState = LoginState.Loading) }
 
         viewModelScope.launch {
             try {
@@ -33,29 +36,18 @@ class LoginViewModel(
                     repository.login(username, password)
                 }
 
-                when (result) {
-                    is ApiResult.Success -> _loginState.value = LoginState.Success
-
-                    is ApiResult.HttpError -> _loginState.value =
-                        LoginState.Error("Login failed")
-
-                    is ApiResult.NetworkError -> _loginState.value =
-                        LoginState.Error("Network error, Please check your internet connection or try again later")
-
-                    is ApiResult.Timeout -> _loginState.value =
-                        LoginState.Error("Request timed out. Please try again.")
-
-                    is ApiResult.Unknown -> _loginState.value =
-                        LoginState.Error("Unexpected error occurred. Please try again later.")
-
-                    is ApiResult.Unauthorized -> _loginState.value =
-                        LoginState.Error("Invalid username or password.")
+                val newState = when (result) {
+                    is ApiResult.Success -> LoginState.Success
+                    is ApiResult.HttpError -> LoginState.Error("Login failed")
+                    is ApiResult.NetworkError -> LoginState.Error("Network error, Please check your internet connection or try again later")
+                    is ApiResult.Timeout -> LoginState.Error("Request timed out. Please try again.")
+                    is ApiResult.Unknown -> LoginState.Error("Unexpected error occurred. Please try again later.")
+                    is ApiResult.Unauthorized -> LoginState.Error("Invalid username or password.")
                 }
+                _uiState.update { it.copy(loginState = newState) }
             } catch (e: Exception) {
                 // purely a safety net for unexpected cases
-                _loginState.value = LoginState.Error(
-                    "Unexpected error: ${e.message ?: "Something went wrong"}"
-                )
+                _uiState.update { it.copy(loginState = LoginState.Error("Unexpected error: ${e.message ?: "Something went wrong"}")) }
             }
         }
     }
@@ -65,22 +57,17 @@ class LoginViewModel(
     fun checkAutoLogin() {
         viewModelScope.launch {
             try {
-                val token = withLoading {
-                    repository.getSavedToken()
-                }
-                _autoLoginState.value = if (!token.isNullOrEmpty()) {
-                    AutoLoginState.TokenFound
-                } else {
-                    AutoLoginState.NoToken
-                }
-            } catch (e: Exception) {
-                _autoLoginState.value = AutoLoginState.Error("Error checking saved login")
+                val token = withLoading { repository.getSavedToken() }
+                val state = if (!token.isNullOrEmpty()) AutoLoginState.TokenFound else AutoLoginState.NoToken
+                _uiState.update { it.copy(autoLoginState = state) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(autoLoginState = AutoLoginState.Error("Error checking saved login")) }
             }
         }
     }
 
     fun clearLoginState() {
-        _loginState.value = LoginState.Idle
+        _uiState.update { it.copy(loginState = LoginState.Idle) }
     }
 }
 

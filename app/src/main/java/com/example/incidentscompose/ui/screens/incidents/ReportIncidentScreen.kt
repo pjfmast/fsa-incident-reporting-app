@@ -37,8 +37,7 @@ import com.example.incidentscompose.util.PhotoUtils
 import com.example.incidentscompose.util.rememberPhotoPermissionLauncher
 import com.example.incidentscompose.viewmodel.ReportIncidentUiState
 import com.example.incidentscompose.viewmodel.ReportIncidentViewModel
-import org.koin.androidx.compose.koinViewModel
-
+import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ReportIncidentScreen(
     onNavigateBack: () -> Unit,
@@ -47,7 +46,7 @@ fun ReportIncidentScreen(
     viewModel: ReportIncidentViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isLoading by viewModel.isBusy.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
     val photoPermissionHandler = remember {
@@ -81,13 +80,28 @@ fun ReportIncidentScreen(
 
     ReportIncidentDialogs(
         uiState = uiState,
-        viewModel = viewModel,
-        cameraLauncher = cameraLauncher,
-        photoPickerLauncher = photoPickerLauncher,
-        onCameraUriCreated = { currentCameraUri = it },
-        onNavigateToLogin = onNavigateToLogin,
-        onNavigateToIncidentList = onNavigateToIncidentList,
-        context = context
+        onDismissImageSource = { viewModel.dismissImageSourceDialog() },
+        onCameraClick = {
+            PhotoUtils.createImageUri(context)?.let { uri ->
+                currentCameraUri = uri
+                cameraLauncher.launch(uri)
+            }
+        },
+        onGalleryClick = {
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onDismissPermissionWarning = { viewModel.dismissPermissionWarning() },
+        onContinueAfterSuccess = {
+            viewModel.dismissSuccessDialog()
+            viewModel.resetForm()
+            if (uiState.createdIncident?.reportedBy != null) {
+                onNavigateToIncidentList()
+            } else {
+                onNavigateToLogin()
+            }
+        }
     )
 
     // Main content
@@ -104,10 +118,26 @@ fun ReportIncidentScreen(
             ReportIncidentContent(
                 paddingValues = paddingValues,
                 uiState = uiState,
-                viewModel = viewModel,
                 isLoading = isLoading,
-                photoPermissionHandler = photoPermissionHandler,
-                photoPermissionLauncher = photoPermissionLauncher
+                onCategorySelected = { viewModel.updateCategory(it) },
+                onDescriptionChange = { viewModel.updateDescription(it) },
+                onAddPhotoClick = {
+                    if (photoPermissionHandler.hasPermissions()) {
+                        viewModel.showImageSourceDialog()
+                    } else {
+                        photoPermissionHandler.requestPermissions(photoPermissionLauncher)
+                    }
+                },
+                onRemovePhoto = { viewModel.removePhoto(it.toString()) },
+                onUseCurrentLocation = { viewModel.requestUseCurrentLocation() },
+                onLocationSelected = { lat, lon -> viewModel.updateLocation(lat, lon) },
+                onMapTouch = { isTouching -> /* handled inside content */ },
+                onLocationPermissionHandled = { viewModel.onLocationPermissionHandled() },
+                onCurrentLocationUsed = { viewModel.onCurrentLocationUsed() },
+                onLocationError = { error -> viewModel.showLocationError(error) },
+                onSubmit = {
+                    viewModel.submitReport(context)
+                }
             )
         }
         LoadingOverlay(isLoading = isLoading)
@@ -118,13 +148,20 @@ fun ReportIncidentScreen(
 private fun ReportIncidentContent(
     paddingValues: PaddingValues,
     uiState: ReportIncidentUiState,
-    viewModel: ReportIncidentViewModel,
     isLoading: Boolean,
-    photoPermissionHandler: PhotoPermissionHandler,
-    photoPermissionLauncher: androidx.activity.compose.ManagedActivityResultLauncher<Array<String>, Map<String, Boolean>>
+    onCategorySelected: (IncidentCategory) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onAddPhotoClick: () -> Unit,
+    onRemovePhoto: (android.net.Uri) -> Unit,
+    onUseCurrentLocation: () -> Unit,
+    onLocationSelected: (Double, Double) -> Unit,
+    onMapTouch: (Boolean) -> Unit,
+    onLocationPermissionHandled: () -> Unit,
+    onCurrentLocationUsed: () -> Unit,
+    onLocationError: (String) -> Unit,
+    onSubmit: () -> Unit,
 ) {
     var parentScrollEnabled by remember { mutableStateOf(true) }
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -136,24 +173,18 @@ private fun ReportIncidentContent(
 
         CategorySelectionCard(
             selectedCategory = uiState.selectedCategory,
-            onCategorySelected = { viewModel.updateCategory(it) }
+            onCategorySelected = onCategorySelected
         )
 
         DescriptionInputCard(
             description = uiState.description,
-            onDescriptionChange = { viewModel.updateDescription(it) }
+            onDescriptionChange = onDescriptionChange
         )
 
         PhotoUploadCard(
             photos = uiState.photos.map { it.toUri() },
-            onAddPhoto = {
-                if (photoPermissionHandler.hasPermissions()) {
-                    viewModel.showImageSourceDialog()
-                } else {
-                    photoPermissionHandler.requestPermissions(photoPermissionLauncher)
-                }
-            },
-            onRemovePhoto = { viewModel.removePhoto(it.toString()) }
+            onAddPhoto = onAddPhotoClick,
+            onRemovePhoto = onRemovePhoto
         )
 
         MapLocationCard(
@@ -161,31 +192,22 @@ private fun ReportIncidentContent(
             longitude = uiState.longitude,
             shouldRequestLocationPermission = uiState.shouldRequestLocationPermission,
             shouldUseCurrentLocation = uiState.shouldUseCurrentLocation,
-            onUseCurrentLocation = {
-                viewModel.requestUseCurrentLocation()
-            },
-            onLocationSelected = { lat, lon ->
-                viewModel.updateLocation(lat, lon)
-            },
+            onUseCurrentLocation = onUseCurrentLocation,
+            onLocationSelected = onLocationSelected,
             onMapTouch = { isTouchingMap ->
                 parentScrollEnabled = !isTouchingMap
+                onMapTouch(isTouchingMap)
             },
-            onLocationPermissionHandled = {
-                viewModel.onLocationPermissionHandled()
-            },
-            onCurrentLocationUsed = {
-                viewModel.onCurrentLocationUsed()
-            },
-            onLocationError = { error ->
-                viewModel.showLocationError(error)
-            }
+            onLocationPermissionHandled = onLocationPermissionHandled,
+            onCurrentLocationUsed = onCurrentLocationUsed,
+            onLocationError = onLocationError
         )
 
         ErrorMessage(errorMessage = uiState.errorMessage)
 
         SubmitButton(
             isLoading = isLoading,
-            onClick = { viewModel.submitReport(context) }
+            onClick = onSubmit
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -195,51 +217,36 @@ private fun ReportIncidentContent(
 @Composable
 private fun ReportIncidentDialogs(
     uiState: ReportIncidentUiState,
-    viewModel: ReportIncidentViewModel,
-    cameraLauncher: androidx.activity.compose.ManagedActivityResultLauncher<Uri, Boolean>,
-    photoPickerLauncher: androidx.activity.compose.ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?>,
-    onCameraUriCreated: (Uri) -> Unit,
-    onNavigateToLogin: () -> Unit,
-    onNavigateToIncidentList: () -> Unit,
-    context: android.content.Context
+    onDismissImageSource: () -> Unit,
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onDismissPermissionWarning: () -> Unit,
+    onContinueAfterSuccess: () -> Unit,
 ) {
     if (uiState.showImageSourceDialog) {
         ImageSourceDialog(
-            onDismiss = { viewModel.dismissImageSourceDialog() },
+            onDismiss = onDismissImageSource,
             onCameraClick = {
-                viewModel.dismissImageSourceDialog()
-                PhotoUtils.createImageUri(context)?.let { uri ->
-                    onCameraUriCreated(uri)
-                    cameraLauncher.launch(uri)
-                }
+                onDismissImageSource()
+                onCameraClick()
             },
             onGalleryClick = {
-                viewModel.dismissImageSourceDialog()
-                photoPickerLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                )
+                onDismissImageSource()
+                onGalleryClick()
             }
         )
     }
 
     if (uiState.showPermissionDeniedWarning) {
         PermissionDeniedDialog(
-            onDismiss = { viewModel.dismissPermissionWarning() }
+            onDismiss = onDismissPermissionWarning
         )
     }
 
     if (uiState.showSuccessDialog) {
         ReportSuccessDialog(
             onDismiss = { },
-            onContinue = {
-                viewModel.dismissSuccessDialog()
-                viewModel.resetForm()
-                if (uiState.createdIncident?.reportedBy != null) {
-                    onNavigateToIncidentList()
-                } else {
-                    onNavigateToLogin()
-                }
-            }
+            onContinue = onContinueAfterSuccess
         )
     }
 }

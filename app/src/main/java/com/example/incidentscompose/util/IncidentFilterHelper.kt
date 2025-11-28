@@ -5,7 +5,7 @@ import com.example.incidentscompose.data.model.IncidentResponse
 import com.example.incidentscompose.data.model.Priority
 import com.example.incidentscompose.data.model.Status
 
-class IncidentFilterHelper {
+object IncidentFilterHelper {
 
     fun filterIncidents(
         incidents: List<IncidentResponse>,
@@ -45,9 +45,5 @@ class IncidentFilterHelper {
                 priorityFilter.isNotEmpty() ||
                 statusFilter.isNotEmpty() ||
                 categoryFilter.isNotEmpty()
-    }
-
-    companion object {
-        val instance = IncidentFilterHelper()
     }
 }

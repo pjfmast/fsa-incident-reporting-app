@@ -9,50 +9,33 @@ import com.example.incidentscompose.data.model.Role
 import com.example.incidentscompose.data.model.Status
 import com.example.incidentscompose.data.repository.IncidentRepository
 import com.example.incidentscompose.data.store.TokenPreferences
-import com.example.incidentscompose.ui.states.BaseViewModel
 import com.example.incidentscompose.util.IncidentFilterHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+data class IncidentManagementUiState(
+    val userRole: Role? = null,
+    val allIncidents: List<IncidentResponse> = emptyList(),
+    val displayedIncidents: List<IncidentResponse> = emptyList(),
+    val unauthorizedState: Boolean = false,
+    val showLoadMore: Boolean = false,
+    val toastMessage: String? = null,
+    val searchQuery: String = "",
+    val selectedPriorityFilter: Set<Priority> = emptySet(),
+    val selectedStatusFilter: Set<Status> = emptySet(),
+    val selectedCategoryFilter: Set<IncidentCategory> = emptySet(),
+    val filteredIncidents: List<IncidentResponse> = emptyList()
+)
+
 class IncidentManagementViewModel(
     private val incidentRepository: IncidentRepository,
     private val tokenPreferences: TokenPreferences
 ) : BaseViewModel() {
 
-    private val _userRole = MutableStateFlow<Role?>(null)
-    val userRole: StateFlow<Role?> = _userRole.asStateFlow()
-
-    private val _allIncidents = MutableStateFlow<List<IncidentResponse>>(emptyList())
-    val allIncidents: StateFlow<List<IncidentResponse>> = _allIncidents.asStateFlow()
-
-    private val _displayedIncidents = MutableStateFlow<List<IncidentResponse>>(emptyList())
-    val displayedIncidents: StateFlow<List<IncidentResponse>> = _displayedIncidents.asStateFlow()
-
-    private val _unauthorizedState = MutableStateFlow(false)
-    val unauthorizedState: StateFlow<Boolean> = _unauthorizedState.asStateFlow()
-
-    private val _showLoadMore = MutableStateFlow(false)
-    val showLoadMore: StateFlow<Boolean> = _showLoadMore.asStateFlow()
-
-    private val _toastMessage = MutableStateFlow<String?>(null)
-    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
-
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    private val _selectedPriorityFilter = MutableStateFlow<Set<Priority>>(emptySet())
-    val selectedPriorityFilter: StateFlow<Set<Priority>> = _selectedPriorityFilter.asStateFlow()
-
-    private val _selectedStatusFilter = MutableStateFlow<Set<Status>>(emptySet())
-    val selectedStatusFilter: StateFlow<Set<Status>> = _selectedStatusFilter.asStateFlow()
-
-    private val _selectedCategoryFilter = MutableStateFlow<Set<IncidentCategory>>(emptySet())
-    val selectedCategoryFilter: StateFlow<Set<IncidentCategory>> = _selectedCategoryFilter.asStateFlow()
-
-    private val _filteredIncidents = MutableStateFlow<List<IncidentResponse>>(emptyList())
-    val filteredIncidents: StateFlow<List<IncidentResponse>> = _filteredIncidents.asStateFlow()
+    private val _uiState = MutableStateFlow(IncidentManagementUiState())
+    val uiState: StateFlow<IncidentManagementUiState> = _uiState.asStateFlow()
 
     private var currentDisplayCount = 0
     private val pageSize = 20
@@ -64,7 +47,9 @@ class IncidentManagementViewModel(
 
     private fun loadUserRole() {
         viewModelScope.launch {
-            _userRole.value = tokenPreferences.getUserRole()
+            _uiState.value = _uiState.value.copy(
+                userRole = tokenPreferences.getUserRole()
+            )
         }
     }
 
@@ -74,26 +59,33 @@ class IncidentManagementViewModel(
                 when (val result = incidentRepository.getAllIncidents()) {
                     is ApiResult.Success -> {
                         val incidents = result.data
-                        _allIncidents.value = incidents
                         currentDisplayCount = minOf(pageSize, incidents.size)
-                        _displayedIncidents.value = incidents.take(currentDisplayCount)
-                        _showLoadMore.value = incidents.size > currentDisplayCount
+                        _uiState.value = _uiState.value.copy(
+                            allIncidents = incidents,
+                            displayedIncidents = incidents.take(currentDisplayCount),
+                            showLoadMore = incidents.size > currentDisplayCount,
+                            toastMessage = null
+                        )
                         applyFilters()
                     }
 
-                    is ApiResult.Unauthorized -> _unauthorizedState.value = true
+                    is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
 
-                    is ApiResult.HttpError -> _toastMessage.value =
-                        "Failed to load incidents: ${result.message}"
+                    is ApiResult.HttpError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to load incidents: ${result.message}"
+                    )
 
-                    is ApiResult.NetworkError -> _toastMessage.value =
-                        "Network error: ${result.exception.message}"
+                    is ApiResult.NetworkError -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
 
-                    is ApiResult.Timeout -> _toastMessage.value =
-                        "Request timed out while loading incidents."
+                    is ApiResult.Timeout -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "Request timed out while loading incidents."
+                    )
 
-                    is ApiResult.Unknown -> _toastMessage.value =
-                        "An unexpected error occurred while loading incidents."
+                    is ApiResult.Unknown -> _uiState.value = _uiState.value.copy(
+                        toastMessage = "An unexpected error occurred while loading incidents."
+                    )
                 }
             }
         }
@@ -103,97 +95,112 @@ class IncidentManagementViewModel(
         viewModelScope.launch {
             when (val result = incidentRepository.deleteIncident(incidentId)) {
                 is ApiResult.Success -> {
-                    val updatedList = _allIncidents.value.filterNot { it.id == incidentId }
-                    _allIncidents.value = updatedList
+                    val updatedList = _uiState.value.allIncidents.filterNot { it.id == incidentId }
 
                     // Update display after deletion
                     currentDisplayCount = minOf(currentDisplayCount, updatedList.size)
-                    _displayedIncidents.value = updatedList.take(currentDisplayCount)
+                    _uiState.value = _uiState.value.copy(
+                        allIncidents = updatedList,
+                        displayedIncidents = updatedList.take(currentDisplayCount),
+                        toastMessage = "Incident deleted successfully"
+                    )
 
                     applyFilters()
-                    _toastMessage.value = "Incident deleted successfully"
                 }
 
-                is ApiResult.Unauthorized -> _unauthorizedState.value = true
+                is ApiResult.Unauthorized -> _uiState.value = _uiState.value.copy(unauthorizedState = true)
 
                 is ApiResult.HttpError -> {
-                    _toastMessage.value = "Failed to delete incident: ${result.message}"
+                    _uiState.value = _uiState.value.copy(
+                        toastMessage = "Failed to delete incident: ${result.message}"
+                    )
                 }
 
                 is ApiResult.NetworkError -> {
-                    _toastMessage.value = "Network error: ${result.exception.message}"
+                    _uiState.value = _uiState.value.copy(
+                        toastMessage = "Network error: ${result.exception.message}"
+                    )
                 }
 
                 is ApiResult.Timeout -> {
-                    _toastMessage.value = "Delete request timed out"
+                    _uiState.value = _uiState.value.copy(
+                        toastMessage = "Delete request timed out"
+                    )
                 }
 
                 is ApiResult.Unknown -> {
-                    _toastMessage.value = "Unexpected error occurred"
+                    _uiState.value = _uiState.value.copy(
+                        toastMessage = "Unexpected error occurred"
+                    )
                 }
             }
         }
     }
 
     fun loadMoreIncidents() {
-        val allIncidents = _allIncidents.value
+        val allIncidents = _uiState.value.allIncidents
         val newDisplayCount = minOf(currentDisplayCount + pageSize, allIncidents.size)
 
         if (newDisplayCount > currentDisplayCount) {
-            _displayedIncidents.value = allIncidents.take(newDisplayCount)
+            _uiState.value = _uiState.value.copy(
+                displayedIncidents = allIncidents.take(newDisplayCount),
+                showLoadMore = allIncidents.size > newDisplayCount
+            )
             currentDisplayCount = newDisplayCount
-            _showLoadMore.value = allIncidents.size > currentDisplayCount
             applyFilters()
         } else {
-            _showLoadMore.value = false
+            _uiState.value = _uiState.value.copy(showLoadMore = false)
         }
     }
 
     private fun applyFilters() {
-        val filtered = IncidentFilterHelper.instance.filterIncidents(
-            incidents = _displayedIncidents.value,
-            searchQuery = _searchQuery.value,
-            priorityFilter = _selectedPriorityFilter.value,
-            statusFilter = _selectedStatusFilter.value,
-            categoryFilter = _selectedCategoryFilter.value
+        val state = _uiState.value
+        val filtered = IncidentFilterHelper.filterIncidents(
+            incidents = state.displayedIncidents,
+            searchQuery = state.searchQuery,
+            priorityFilter = state.selectedPriorityFilter,
+            statusFilter = state.selectedStatusFilter,
+            categoryFilter = state.selectedCategoryFilter
         )
-        _filteredIncidents.value = filtered
+        _uiState.value = state.copy(filteredIncidents = filtered)
     }
 
     fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
+        _uiState.value = _uiState.value.copy(searchQuery = query)
         applyFilters()
     }
 
     fun updatePriorityFilter(priorities: Set<Priority>) {
-        _selectedPriorityFilter.value = priorities
+        _uiState.value = _uiState.value.copy(selectedPriorityFilter = priorities)
         applyFilters()
     }
 
     fun updateStatusFilter(statuses: Set<Status>) {
-        _selectedStatusFilter.value = statuses
+        _uiState.value = _uiState.value.copy(selectedStatusFilter = statuses)
         applyFilters()
     }
 
     fun updateCategoryFilter(categories: Set<IncidentCategory>) {
-        _selectedCategoryFilter.value = categories
+        _uiState.value = _uiState.value.copy(selectedCategoryFilter = categories)
         applyFilters()
     }
 
     fun clearAllFilters() {
-        _searchQuery.value = ""
-        _selectedPriorityFilter.value = emptySet()
-        _selectedStatusFilter.value = emptySet()
-        _selectedCategoryFilter.value = emptySet()
+        _uiState.value = _uiState.value.copy(
+            searchQuery = "",
+            selectedPriorityFilter = emptySet(),
+            selectedStatusFilter = emptySet(),
+            selectedCategoryFilter = emptySet()
+        )
         applyFilters()
     }
 
     val hasActiveFilters: Boolean
-        get() = IncidentFilterHelper.instance.hasActiveFilters(
-            searchQuery = _searchQuery.value,
-            priorityFilter = _selectedPriorityFilter.value,
-            statusFilter = _selectedStatusFilter.value,
-            categoryFilter = _selectedCategoryFilter.value
+        get() = IncidentFilterHelper.hasActiveFilters(
+            searchQuery = _uiState.value.searchQuery,
+            priorityFilter = _uiState.value.selectedPriorityFilter,
+            statusFilter = _uiState.value.selectedStatusFilter,
+            categoryFilter = _uiState.value.selectedCategoryFilter
         )
 
     fun refreshIncidents() {

@@ -10,11 +10,20 @@ import com.example.incidentscompose.data.repository.IncidentRepository
 import com.example.incidentscompose.data.repository.UserRepository
 import com.example.incidentscompose.data.store.IncidentDataStore
 import com.example.incidentscompose.data.store.TokenPreferences
-import com.example.incidentscompose.ui.states.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class MyIncidentListUiState(
+    val user: UserResponse? = null,
+    val incidents: List<IncidentResponse> = emptyList(),
+    val logoutEvent: Boolean = false,
+    val userRole: Role? = null,
+    val unauthorizedState: Boolean = false,
+    val toastMessage: String? = null
+)
 
 class MyIncidentListViewModel(
     private val authRepository: AuthRepository,
@@ -23,24 +32,8 @@ class MyIncidentListViewModel(
     private val tokenPreferences: TokenPreferences,
     private val incidentDataStore: IncidentDataStore
 ) : BaseViewModel() {
-
-    private val _user = MutableStateFlow<UserResponse?>(null)
-    val user: StateFlow<UserResponse?> = _user.asStateFlow()
-
-    private val _incidents = MutableStateFlow<List<IncidentResponse>>(emptyList())
-    val incidents: StateFlow<List<IncidentResponse>> = _incidents.asStateFlow()
-
-    private val _logoutEvent = MutableStateFlow(false)
-    val logoutEvent: StateFlow<Boolean> = _logoutEvent.asStateFlow()
-
-    private val _userRole = MutableStateFlow<Role?>(null)
-    val userRole: StateFlow<Role?> = _userRole.asStateFlow()
-
-    private val _unauthorizedState = MutableStateFlow(false)
-    val unauthorizedState: StateFlow<Boolean> = _unauthorizedState.asStateFlow()
-
-    private val _toastMessage = MutableStateFlow<String?>(null)
-    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+    private val _uiState = MutableStateFlow(MyIncidentListUiState())
+    val uiState: StateFlow<MyIncidentListUiState> = _uiState.asStateFlow()
 
     init {
         loadUserRole()
@@ -49,7 +42,8 @@ class MyIncidentListViewModel(
 
     private fun loadUserRole() {
         viewModelScope.launch {
-            _userRole.value = tokenPreferences.getUserRole()
+            val role = tokenPreferences.getUserRole()
+            _uiState.update { it.copy(userRole = role) }
         }
     }
 
@@ -59,24 +53,22 @@ class MyIncidentListViewModel(
                 try {
                     when (val userResult = userRepository.getCurrentUser()) {
                         is ApiResult.Success -> {
-                            _user.value = userResult.data
+                            _uiState.update { it.copy(user = userResult.data, toastMessage = null) }
                             loadUserIncidents()
                         }
 
                         is ApiResult.HttpError -> handleUserError(userResult)
                         is ApiResult.NetworkError -> handleUserError(userResult)
                         is ApiResult.Timeout -> {
-                            _toastMessage.value = "Fetching user data timed out."
-                            _user.value = null
+                            _uiState.update { it.copy(user = null, toastMessage = "Fetching user data timed out.") }
                         }
                         is ApiResult.Unknown -> {
-                            _toastMessage.value = "Unexpected error fetching user data."
-                            _user.value = null
+                            _uiState.update { it.copy(user = null, toastMessage = "Unexpected error fetching user data.") }
                         }
                         is ApiResult.Unauthorized -> logout()
                     }
                 } catch (e: Exception) {
-                    _toastMessage.value = "Unexpected error: ${e.message ?: "Please try again"}"
+                    _uiState.update { it.copy(toastMessage = "Unexpected error: ${e.message ?: "Please try again"}") }
                     logout()
                 }
             }
@@ -88,16 +80,22 @@ class MyIncidentListViewModel(
             withLoading {
                 try {
                     when (val incidentsResult = incidentRepository.getMyIncidents()) {
-                        is ApiResult.Success -> _incidents.value = incidentsResult.data
+                        is ApiResult.Success -> {
+                            _uiState.update { it.copy(incidents = incidentsResult.data, toastMessage = null) }
+                        }
 
                         is ApiResult.HttpError -> handleIncidentError(incidentsResult)
                         is ApiResult.NetworkError -> handleIncidentError(incidentsResult)
-                        is ApiResult.Timeout -> _toastMessage.value = "Fetching incidents timed out."
-                        is ApiResult.Unknown -> _toastMessage.value = "Unexpected error fetching incidents."
+                        is ApiResult.Timeout -> {
+                            _uiState.update { it.copy(toastMessage = "Fetching incidents timed out.") }
+                        }
+                        is ApiResult.Unknown -> {
+                            _uiState.update { it.copy(toastMessage = "Unexpected error fetching incidents.") }
+                        }
                         is ApiResult.Unauthorized -> logout()
                     }
                 } catch (e: Exception) {
-                    _toastMessage.value = "Unexpected error: ${e.message ?: "Please try again"}"
+                    _uiState.update { it.copy(toastMessage = "Unexpected error: ${e.message ?: "Please try again"}") }
                 }
             }
         }
@@ -105,7 +103,7 @@ class MyIncidentListViewModel(
 
     private fun handleUserError(result: ApiResult<*>): Boolean {
         if (result is ApiResult.HttpError && result.code == 401) {
-            _unauthorizedState.value = true
+            _uiState.update { it.copy(unauthorizedState = true) }
         }
         logout()
         return false
@@ -113,7 +111,7 @@ class MyIncidentListViewModel(
 
     private fun handleIncidentError(result: ApiResult<*>): Boolean {
         if (result is ApiResult.HttpError && result.code == 401) {
-            _unauthorizedState.value = true
+            _uiState.update { it.copy(unauthorizedState = true) }
         }
         // Leave incidents list unchanged
         return false
@@ -125,16 +123,14 @@ class MyIncidentListViewModel(
                 try {
                     authRepository.logout()
                 } finally {
-                    _user.value = null
-                    _incidents.value = emptyList()
-                    _logoutEvent.value = true
+                    _uiState.update { it.copy(user = null, incidents = emptyList(), logoutEvent = true) }
                 }
             }
         }
     }
 
     fun resetLogoutEvent() {
-        _logoutEvent.value = false
+        _uiState.update { it.copy(logoutEvent = false) }
     }
 
     fun saveSelectedIncident(incident: IncidentResponse) {
@@ -148,6 +144,6 @@ class MyIncidentListViewModel(
     }
 
     fun clearToastMessage() {
-        _toastMessage.value = null
+        _uiState.update { it.copy(toastMessage = null) }
     }
 }

@@ -62,11 +62,17 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    // Navigation
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.core)
     // Koin
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
     implementation(libs.koin.android)
+    // For Compose integration (new API)
     implementation(libs.koin.compose)
+    implementation(libs.koin.compose.viewmodel)
+    // Legacy androidx.compose integration removed after standardizing imports
     // Ktor
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)

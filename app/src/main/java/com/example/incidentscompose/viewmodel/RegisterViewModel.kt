@@ -3,39 +3,42 @@ package com.example.incidentscompose.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.incidentscompose.data.model.ApiResult
 import com.example.incidentscompose.data.repository.UserRepository
-import com.example.incidentscompose.ui.states.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.ConnectException
 import java.net.UnknownHostException
 
+data class RegisterUiState(
+    val state: RegisterState = RegisterState.Idle
+)
+
 class RegisterViewModel(
     private val userRepository: UserRepository
 ) : BaseViewModel() {
-
-    private val _registerState = MutableStateFlow<RegisterState>(RegisterState.Idle)
-    val registerState: StateFlow<RegisterState> = _registerState.asStateFlow()
+    private val _uiState = MutableStateFlow(RegisterUiState())
+    val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
     fun register(username: String, password: String, email: String, confirmPassword: String) {
         if (username.isBlank() || password.isBlank() || email.isBlank() || confirmPassword.isBlank()) {
-            _registerState.value = RegisterState.Error("Please fill in all fields")
+            _uiState.update { it.copy(state = RegisterState.Error("Please fill in all fields")) }
             return
         }
 
         if (password != confirmPassword) {
-            _registerState.value = RegisterState.Error("Passwords do not match")
+            _uiState.update { it.copy(state = RegisterState.Error("Passwords do not match")) }
             return
         }
 
         if (password.length < 6) {
-            _registerState.value = RegisterState.Error("Password must be at least 6 characters")
+            _uiState.update { it.copy(state = RegisterState.Error("Password must be at least 6 characters")) }
             return
         }
 
         if (!isValidEmail(email)) {
-            _registerState.value = RegisterState.Error("Please enter a valid email address")
+            _uiState.update { it.copy(state = RegisterState.Error("Please enter a valid email address")) }
             return
         }
 
@@ -43,38 +46,29 @@ class RegisterViewModel(
             withLoading {
                 try {
                     val result = userRepository.register(username, password, email, null)
-                    _registerState.value = when (result) {
+                    val newState = when (result) {
                         is ApiResult.Success -> RegisterState.Success
-                        is ApiResult.HttpError -> RegisterState.Error(
-                            "Registration failed, please try again later.)"
-                        )
-                        is ApiResult.NetworkError -> RegisterState.Error(
-                            "Network error, please check your internet connection and try again"
-                        )
-                        is ApiResult.Timeout -> RegisterState.Error(
-                            "Registration request timed out. Please try again."
-                        )
-                        is ApiResult.Unauthorized -> RegisterState.Error(
-                            "You are not authorized to perform this action."
-                        )
-                        is ApiResult.Unknown -> RegisterState.Error(
-                            "Unexpected error occurred during registration."
-                        )
+                        is ApiResult.HttpError -> RegisterState.Error("Registration failed, please try again later.)")
+                        is ApiResult.NetworkError -> RegisterState.Error("Network error, please check your internet connection and try again")
+                        is ApiResult.Timeout -> RegisterState.Error("Registration request timed out. Please try again.")
+                        is ApiResult.Unauthorized -> RegisterState.Error("You are not authorized to perform this action.")
+                        is ApiResult.Unknown -> RegisterState.Error("Unexpected error occurred during registration.")
                     }
+                    _uiState.update { it.copy(state = newState) }
                 } catch (e: Exception) {
                     val message = when (e) {
                         is ConnectException, is UnknownHostException ->
                             "Network error: Unable to connect to server."
                         else -> "Unexpected error: ${e.message ?: "Please try again later"}"
                     }
-                    _registerState.value = RegisterState.Error(message)
+                    _uiState.update { it.copy(state = RegisterState.Error(message)) }
                 }
             }
         }
     }
 
     fun clearRegisterState() {
-        _registerState.value = RegisterState.Idle
+        _uiState.update { it.copy(state = RegisterState.Idle) }
     }
 
     private fun isValidEmail(email: String): Boolean =

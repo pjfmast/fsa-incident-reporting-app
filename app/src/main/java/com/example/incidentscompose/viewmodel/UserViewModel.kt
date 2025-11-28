@@ -3,24 +3,24 @@ package com.example.incidentscompose.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.incidentscompose.data.model.*
 import com.example.incidentscompose.data.repository.UserRepository
-import com.example.incidentscompose.ui.states.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class UserViewModel(
     private val userRepository: UserRepository
 ) : BaseViewModel() {
 
-    private val _updateSuccess = MutableStateFlow(false)
-    val updateSuccess: StateFlow<Boolean> = _updateSuccess.asStateFlow()
+    data class UserUiState(
+        val updateSuccess: Boolean = false,
+        val errorMessage: String? = null,
+        val unauthorizedState: Boolean = false
+    )
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    private val _unauthorizedState = MutableStateFlow(false)
-    val unauthorizedState: StateFlow<Boolean> = _unauthorizedState.asStateFlow()
+    private val _uiState = MutableStateFlow(UserUiState())
+    val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
 
     fun updateProfile(
         username: String,
@@ -29,8 +29,7 @@ class UserViewModel(
     ) {
         viewModelScope.launch {
             withLoading {
-                _errorMessage.value = null
-                _updateSuccess.value = false
+                _uiState.update { it.copy(errorMessage = null, updateSuccess = false, unauthorizedState = false) }
 
                 val updateRequest = UpdateUserRequest(
                     username = username,
@@ -40,24 +39,23 @@ class UserViewModel(
                 )
 
                 try {
-                    when (val result = userRepository.updateCurrentUser(updateRequest)) {
-                        is ApiResult.Success -> _updateSuccess.value = true
-                        is ApiResult.HttpError -> _errorMessage.value = "Failed to update profile"
-                        is ApiResult.NetworkError -> _errorMessage.value = "Network error, please try again later"
-                        is ApiResult.Timeout -> _errorMessage.value = "Request timed out. Please try again."
-                        is ApiResult.Unknown -> _errorMessage.value = "Unexpected error occurred."
-                        is ApiResult.Unauthorized -> _unauthorizedState.value = true
+                    val newState = when (val result = userRepository.updateCurrentUser(updateRequest)) {
+                        is ApiResult.Success -> UserUiState(updateSuccess = true, errorMessage = null, unauthorizedState = false)
+                        is ApiResult.HttpError -> UserUiState(updateSuccess = false, errorMessage = "Failed to update profile", unauthorizedState = false)
+                        is ApiResult.NetworkError -> UserUiState(updateSuccess = false, errorMessage = "Network error, please try again later", unauthorizedState = false)
+                        is ApiResult.Timeout -> UserUiState(updateSuccess = false, errorMessage = "Request timed out. Please try again.", unauthorizedState = false)
+                        is ApiResult.Unknown -> UserUiState(updateSuccess = false, errorMessage = "Unexpected error occurred.", unauthorizedState = false)
+                        is ApiResult.Unauthorized -> UserUiState(updateSuccess = false, errorMessage = null, unauthorizedState = true)
                     }
+                    _uiState.update { newState }
                 } catch (e: Exception) {
-                    _errorMessage.value = "Unexpected error: ${e.message ?: "Please try again"}"
+                    _uiState.update { it.copy(errorMessage = "Unexpected error: ${e.message ?: "Please try again"}") }
                 }
             }
         }
     }
 
     fun resetUpdateState() {
-        _updateSuccess.value = false
-        _errorMessage.value = null
-        _unauthorizedState.value = false
+        _uiState.update { UserUiState() }
     }
 }

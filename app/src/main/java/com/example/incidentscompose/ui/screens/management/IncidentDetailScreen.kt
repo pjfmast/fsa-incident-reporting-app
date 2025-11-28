@@ -43,7 +43,8 @@ import com.example.incidentscompose.util.IncidentDisplayHelper.formatCategoryTex
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisplay
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.IncidentDetailViewModel
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
+
 
 @Composable
 fun IncidentDetailScreen(
@@ -52,12 +53,8 @@ fun IncidentDetailScreen(
     incidentId: Long?,
     viewModel: IncidentDetailViewModel = koinViewModel()
 ) {
-    val incident by viewModel.currentIncident.collectAsState()
-    val isBusy by viewModel.isBusy.collectAsState()
-    val reportedUser by viewModel.reportedUser.collectAsState()
-    val toastMessage by viewModel.toastMessage.collectAsState()
-    val unauthorizedState by viewModel.unauthorizedState.collectAsState()
-    val userFetchTimeout by viewModel.userFetchTimeout.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsState()
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
@@ -72,20 +69,20 @@ fun IncidentDetailScreen(
         }
     }
 
-    LaunchedEffect(unauthorizedState) {
-        if (unauthorizedState) {
+    LaunchedEffect(uiState.unauthorizedState) {
+        if (uiState.unauthorizedState) {
             onNavigateToMyIncidentList()
         }
     }
 
-    LaunchedEffect(incident) {
-        incident?.let {
+    LaunchedEffect(uiState.currentIncident) {
+        uiState.currentIncident?.let {
             selectedLocation = it.latitude to it.longitude
         }
     }
 
-    LaunchedEffect(toastMessage) {
-        toastMessage?.let { message ->
+    LaunchedEffect(uiState.toastMessage) {
+        uiState.toastMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             viewModel.clearToastMessage()
         }
@@ -127,7 +124,7 @@ fun IncidentDetailScreen(
                 TextButton(
                     onClick = {
                         showDeleteConfirmDialog = false
-                        incident?.let { inc ->
+                        uiState.currentIncident?.let { inc ->
                             viewModel.deleteIncident(inc.id)
                             onNavigateBack()
                         }
@@ -182,9 +179,9 @@ fun IncidentDetailScreen(
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            if (isBusy && incident == null) {
+            if (isBusy && uiState.currentIncident == null) {
                 LoadingOverlay(isLoading = true)
-            } else if (incident == null) {
+            } else if (uiState.currentIncident == null) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -197,15 +194,15 @@ fun IncidentDetailScreen(
                 }
             } else {
                 IncidentManagementContent(
-                    incident = incident!!,
-                    reportedUser = reportedUser,
+                    incident = uiState.currentIncident!!,
+                    reportedUser = uiState.reportedUser,
                     selectedLocation = selectedLocation,
-                    userFetchTimeout = userFetchTimeout,
+                    userFetchTimeout = uiState.userFetchTimeout,
                     onPriorityChange = { priority ->
-                        viewModel.updatePriority(incident!!.id, priority)
+                        viewModel.updatePriority(uiState.currentIncident!!.id, priority)
                     },
                     onStatusChange = { status ->
-                        viewModel.updateStatus(incident!!.id, status)
+                        viewModel.updateStatus(uiState.currentIncident!!.id, status)
                     },
                     onDelete = {
                         showDeleteConfirmDialog = true
@@ -216,7 +213,7 @@ fun IncidentDetailScreen(
                     onLocationSelected = { lat, lon -> selectedLocation = lat to lon },
                     onSaveLocation = {
                         selectedLocation?.let { (lat, lon) ->
-                            viewModel.updateLocation(incident!!.id, lat, lon)
+                            viewModel.updateLocation(uiState.currentIncident!!.id, lat, lon)
                         }
                     }
                 )

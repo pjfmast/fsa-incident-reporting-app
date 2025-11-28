@@ -4,10 +4,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.incidentscompose.data.model.*
 import com.example.incidentscompose.data.repository.IncidentRepository
 import com.example.incidentscompose.data.store.IncidentDataStore
-import com.example.incidentscompose.ui.states.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MyIncidentDetailViewModel(
@@ -15,14 +15,14 @@ class MyIncidentDetailViewModel(
     private val incidentDataStore: IncidentDataStore
 ) : BaseViewModel() {
 
-    private val _updateResult = MutableStateFlow<ApiResult<IncidentResponse>?>(null)
-    val updateResult: StateFlow<ApiResult<IncidentResponse>?> = _updateResult.asStateFlow()
+    data class MyIncidentDetailUiState(
+        val updateResult: ApiResult<IncidentResponse>? = null,
+        val deleteResult: ApiResult<Unit>? = null,
+        val toastMessage: String? = null
+    )
 
-    private val _deleteResult = MutableStateFlow<ApiResult<Unit>?>(null)
-    val deleteResult: StateFlow<ApiResult<Unit>?> = _deleteResult.asStateFlow()
-
-    private val _toastMessage = MutableStateFlow<String?>(null)
-    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+    private val _uiState = MutableStateFlow(MyIncidentDetailUiState())
+    val uiState: StateFlow<MyIncidentDetailUiState> = _uiState.asStateFlow()
 
     val selectedIncident = incidentDataStore.selectedIncident
 
@@ -44,20 +44,18 @@ class MyIncidentDetailViewModel(
                     )
 
                     val result = incidentRepository.updateIncident(incidentId, updateRequest)
-                    _updateResult.value = result
+                    _uiState.update { it.copy(updateResult = result) }
 
                     when (result) {
                         is ApiResult.Success -> incidentDataStore.saveSelectedIncident(result.data)
-                        is ApiResult.Timeout -> _toastMessage.value = "Update request timed out."
-                        is ApiResult.Unknown -> _toastMessage.value = "Unexpected error while updating."
-                        is ApiResult.HttpError -> _toastMessage.value = "Failed to update incident"
-                        is ApiResult.NetworkError -> _toastMessage.value =
-                            "Network error: ${result.exception.message ?: "Please try again"}"
-                        is ApiResult.Unauthorized -> _toastMessage.value = "Unauthorized action."
+                        is ApiResult.Timeout -> _uiState.update { it.copy(toastMessage = "Update request timed out.") }
+                        is ApiResult.Unknown -> _uiState.update { it.copy(toastMessage = "Unexpected error while updating.") }
+                        is ApiResult.HttpError -> _uiState.update { it.copy(toastMessage = "Failed to update incident") }
+                        is ApiResult.NetworkError -> _uiState.update { it.copy(toastMessage = "Network error: ${result.exception.message ?: "Please try again"}") }
+                        is ApiResult.Unauthorized -> _uiState.update { it.copy(toastMessage = "Unauthorized action.") }
                     }
                 } catch (e: Exception) {
-                    _updateResult.value = ApiResult.NetworkError(e)
-                    _toastMessage.value = "Unexpected error: ${e.message ?: "Please try again"}"
+                    _uiState.update { it.copy(updateResult = ApiResult.NetworkError(e), toastMessage = "Unexpected error: ${e.message ?: "Please try again"}") }
                 }
             }
         }
@@ -68,31 +66,29 @@ class MyIncidentDetailViewModel(
             withLoading {
                 try {
                     val result = incidentRepository.deleteIncident(incidentId)
-                    _deleteResult.value = result
+                    _uiState.update { it.copy(deleteResult = result) }
 
                     when (result) {
-                        is ApiResult.Success -> _toastMessage.value = "Incident deleted successfully."
-                        is ApiResult.Timeout -> _toastMessage.value = "Delete request timed out."
-                        is ApiResult.Unknown -> _toastMessage.value = "Unexpected error while deleting."
-                        is ApiResult.HttpError -> _toastMessage.value = "Failed to delete incident"
-                        is ApiResult.NetworkError -> _toastMessage.value =
-                            "Network error: ${result.exception.message ?: "Please try again"}"
-                        is ApiResult.Unauthorized -> _toastMessage.value = "Unauthorized action."
+                        is ApiResult.Success -> _uiState.update { it.copy(toastMessage = "Incident deleted successfully.") }
+                        is ApiResult.Timeout -> _uiState.update { it.copy(toastMessage = "Delete request timed out.") }
+                        is ApiResult.Unknown -> _uiState.update { it.copy(toastMessage = "Unexpected error while deleting.") }
+                        is ApiResult.HttpError -> _uiState.update { it.copy(toastMessage = "Failed to delete incident") }
+                        is ApiResult.NetworkError -> _uiState.update { it.copy(toastMessage = "Network error: ${result.exception.message ?: "Please try again"}") }
+                        is ApiResult.Unauthorized -> _uiState.update { it.copy(toastMessage = "Unauthorized action.") }
                     }
                 } catch (e: Exception) {
-                    _deleteResult.value = ApiResult.NetworkError(e)
-                    _toastMessage.value = "Unexpected error: ${e.message ?: "Please try again"}"
+                    _uiState.update { it.copy(deleteResult = ApiResult.NetworkError(e), toastMessage = "Unexpected error: ${e.message ?: "Please try again"}") }
                 }
             }
         }
     }
 
     fun resetUpdateResult() {
-        _updateResult.value = null
+        _uiState.update { it.copy(updateResult = null) }
     }
 
     fun resetDeleteResult() {
-        _deleteResult.value = null
+        _uiState.update { it.copy(deleteResult = null) }
     }
 
     fun clearSelectedIncident() {
@@ -102,6 +98,6 @@ class MyIncidentDetailViewModel(
     }
 
     fun clearToastMessage() {
-        _toastMessage.value = null
+        _uiState.update { it.copy(toastMessage = null) }
     }
 }
