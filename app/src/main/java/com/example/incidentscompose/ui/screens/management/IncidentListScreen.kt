@@ -32,6 +32,7 @@ import com.example.incidentscompose.ui.components.SearchAndFilterBar
 import com.example.incidentscompose.util.IncidentDisplayHelper
 import com.example.incidentscompose.viewmodel.IncidentManagementViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.SwipeToDismissBox
@@ -47,10 +48,10 @@ fun IncidentListScreen(
     onNavigateToMyIncidentList: () -> Unit,
     viewModel: IncidentManagementViewModel = koinViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val unauthorizedState = uiState.unauthorizedState
     val userRole = uiState.userRole
-    val isLoading by viewModel.isLoading.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val filteredIncidents = uiState.filteredIncidents
     val showLoadMore = uiState.showLoadMore
 

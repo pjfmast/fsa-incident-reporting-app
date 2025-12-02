@@ -45,7 +45,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +70,7 @@ import com.example.incidentscompose.ui.components.BottomNavBar
 import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.viewmodel.UserManagementViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun UserManagementScreen(
@@ -79,8 +79,8 @@ fun UserManagementScreen(
     onNavigateToIncidentMap: () -> Unit,
     viewModel: UserManagementViewModel = koinViewModel()
 ){
-    val uiState by viewModel.uiState.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var searchQuery by remember { mutableStateOf("") }

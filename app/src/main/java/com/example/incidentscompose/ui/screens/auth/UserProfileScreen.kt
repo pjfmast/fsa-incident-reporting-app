@@ -19,6 +19,7 @@ import com.example.incidentscompose.util.ChangeUserValidationHelper
 import com.example.incidentscompose.viewmodel.UserViewModel
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.net.URLDecoder
 import android.widget.Toast
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,8 +51,8 @@ fun UserProfileScreen(
         return
     }
 
-    val isBusy by viewModel.isLoading.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var username by remember { mutableStateOf(initialUser.username) }
     var email by remember { mutableStateOf(initialUser.email) }

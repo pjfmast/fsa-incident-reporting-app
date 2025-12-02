@@ -44,6 +44,7 @@ import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisp
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.IncidentDetailViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
 @Composable
@@ -53,8 +54,8 @@ fun IncidentDetailScreen(
     incidentId: Long?,
     viewModel: IncidentDetailViewModel = koinViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isBusy by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isBusy by viewModel.isLoading.collectAsStateWithLifecycle()
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
@@ -193,30 +194,32 @@ fun IncidentDetailScreen(
                     )
                 }
             } else {
-                IncidentManagementContent(
-                    incident = uiState.currentIncident!!,
-                    reportedUser = uiState.reportedUser,
-                    selectedLocation = selectedLocation,
-                    userFetchTimeout = uiState.userFetchTimeout,
-                    onPriorityChange = { priority ->
-                        viewModel.updatePriority(uiState.currentIncident!!.id, priority)
-                    },
-                    onStatusChange = { status ->
-                        viewModel.updateStatus(uiState.currentIncident!!.id, status)
-                    },
-                    onDelete = {
-                        showDeleteConfirmDialog = true
-                    },
-                    onImageClick = { imageUrl ->
-                        selectedImageUrl = imageUrl
-                    },
-                    onLocationSelected = { lat, lon -> selectedLocation = lat to lon },
-                    onSaveLocation = {
-                        selectedLocation?.let { (lat, lon) ->
-                            viewModel.updateLocation(uiState.currentIncident!!.id, lat, lon)
+                uiState.currentIncident?.let { incident ->
+                    IncidentManagementContent(
+                        incident = incident,
+                        reportedUser = uiState.reportedUser,
+                        selectedLocation = selectedLocation,
+                        userFetchTimeout = uiState.userFetchTimeout,
+                        onPriorityChange = { priority ->
+                            viewModel.updatePriority(incident.id, priority)
+                        },
+                        onStatusChange = { status ->
+                            viewModel.updateStatus(incident.id, status)
+                        },
+                        onDelete = {
+                            showDeleteConfirmDialog = true
+                        },
+                        onImageClick = { imageUrl ->
+                            selectedImageUrl = imageUrl
+                        },
+                        onLocationSelected = { lat, lon -> selectedLocation = lat to lon },
+                        onSaveLocation = {
+                            selectedLocation?.let { (lat, lon) ->
+                                viewModel.updateLocation(incident.id, lat, lon)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             LoadingOverlay(isLoading = isBusy)

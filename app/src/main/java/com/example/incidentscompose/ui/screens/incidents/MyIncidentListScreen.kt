@@ -50,6 +50,7 @@ import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.MyIncidentListViewModel
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun MyIncidentListScreen(
@@ -63,8 +64,8 @@ fun MyIncidentListScreen(
     viewModel: MyIncidentListViewModel = koinViewModel(),
     backStack: NavBackStack<NavKey>
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isBusy by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isBusy by viewModel.isLoading.collectAsStateWithLifecycle()
     val userRole = uiState.userRole
     val context = LocalContext.current
 

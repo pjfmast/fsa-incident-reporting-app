@@ -39,7 +39,7 @@ class UserViewModel(
                 )
 
                 try {
-                    val newState = when (val result = userRepository.updateCurrentUser(updateRequest)) {
+                    val newState = when (userRepository.updateCurrentUser(updateRequest)) {
                         is ApiResult.Success -> UserUiState(updateSuccess = true, errorMessage = null, unauthorizedState = false)
                         is ApiResult.HttpError -> UserUiState(updateSuccess = false, errorMessage = "Failed to update profile", unauthorizedState = false)
                         is ApiResult.NetworkError -> UserUiState(updateSuccess = false, errorMessage = "Network error, please try again later", unauthorizedState = false)

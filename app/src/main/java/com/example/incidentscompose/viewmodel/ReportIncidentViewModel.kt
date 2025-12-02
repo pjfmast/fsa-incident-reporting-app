@@ -87,16 +87,22 @@ class ReportIncidentViewModel(
     fun submitReport(context: Context) {
         val state = _uiState.value
 
-        val validationError = when {
-            state.description.isBlank() -> "Please enter a description"
-            state.latitude == null || state.longitude == null -> "Please select a location"
-            else -> null
-        }
+        // Local 'val' for latitude and longitude to avoid null checks later
+        val latitude = state.latitude
+        val longitude = state.longitude
 
-        if (validationError != null) {
-            _uiState.update { it.copy(errorMessage = validationError) }
+        // Validate description first
+        if (state.description.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Please enter a description") }
             return
         }
+
+        // Validate a location is selected:
+        if (latitude == null || longitude == null) {
+            _uiState.update { it.copy(errorMessage = "Please select a location") }
+            return
+        }
+
 
         viewModelScope.launch {
             withLoading {
@@ -105,8 +111,8 @@ class ReportIncidentViewModel(
                         CreateIncidentRequest(
                             category = state.selectedCategory,
                             description = state.description,
-                            latitude = state.latitude!!,
-                            longitude = state.longitude!!,
+                            latitude = latitude,
+                            longitude = longitude,
                             priority = Priority.LOW
                         )
                     )

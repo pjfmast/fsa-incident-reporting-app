@@ -22,14 +22,15 @@ import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.viewmodel.RegisterState
 import com.example.incidentscompose.viewmodel.RegisterViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = koinViewModel()
 ) {
-    val isBusy by viewModel.isLoading.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val registrationSuccessMessage = stringResource(R.string.registration_successful_you_can_now_log_in)

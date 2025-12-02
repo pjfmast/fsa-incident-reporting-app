@@ -38,6 +38,7 @@ import com.example.incidentscompose.util.rememberPhotoPermissionLauncher
 import com.example.incidentscompose.viewmodel.ReportIncidentUiState
 import com.example.incidentscompose.viewmodel.ReportIncidentViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ReportIncidentScreen(
     onNavigateBack: () -> Unit,
@@ -45,8 +46,8 @@ fun ReportIncidentScreen(
     onNavigateToIncidentList: () -> Unit,
     viewModel: ReportIncidentViewModel = koinViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val photoPermissionHandler = remember {

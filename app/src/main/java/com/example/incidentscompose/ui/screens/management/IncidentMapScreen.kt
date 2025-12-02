@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.incidentscompose.data.model.IncidentCategory
 import com.example.incidentscompose.data.model.IncidentResponse
 import com.example.incidentscompose.data.model.Priority
@@ -41,10 +41,10 @@ fun IncidentMapScreen(
     onNavigateToUserManagement: () -> Unit,
     viewModel: IncidentManagementViewModel = koinViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val unauthorizedState = uiState.unauthorizedState
     val userRole = uiState.userRole
-    val isLoading by viewModel.isLoading.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val filteredIncidents = uiState.filteredIncidents
     val hasActiveFilters by remember { derivedStateOf { viewModel.hasActiveFilters } }
 
@@ -155,7 +155,7 @@ private fun IncidentMapContent(
                 onUpdateStatus = onUpdateStatus,
                 onUpdateCategory = onUpdateCategory,
                 onClearAll = onClearAllFilters,
-                onDismiss = { showFilterDialog = false }
+                onDismiss = { }
             )
         }
     }

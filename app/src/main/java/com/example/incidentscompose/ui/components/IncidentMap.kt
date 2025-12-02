@@ -22,6 +22,7 @@ import com.example.incidentscompose.data.model.IncidentCategory
 import com.example.incidentscompose.data.model.IncidentResponse
 import com.example.incidentscompose.data.model.Priority
 import com.example.incidentscompose.data.model.Status
+import com.example.incidentscompose.ui.screens.management.PriorityChip
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisplay
 import com.example.incidentscompose.util.LocationManager
 import com.example.incidentscompose.util.rememberPermissionLauncher
@@ -100,7 +101,7 @@ fun IncidentMap(
                 try {
                     val (lat, lon) = LocationManager.getCurrentLocation(context).getOrThrow()
                     userLocation = lat to lon
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Silently fail for periodic updates
                 }
                 delay(1000)
@@ -110,11 +111,12 @@ fun IncidentMap(
 
     // Handle "use current location" trigger - FIXED THIS PART
     LaunchedEffect(shouldUseCurrentLocation, userLocation) {
-        if (shouldUseCurrentLocation && userLocation != null) {
-            // Update the selected location to show the pin
-            selectedLocation = userLocation
-            onLocationSelected(userLocation!!.first, userLocation!!.second)
-            onCurrentLocationUsed()
+        if (shouldUseCurrentLocation) {
+            userLocation?.let { (lat, long) ->
+                selectedLocation = userLocation
+                onLocationSelected(lat, long)
+                onCurrentLocationUsed()
+            }
         }
     }
 
@@ -135,14 +137,19 @@ fun IncidentMap(
 
     // Animate to user location when "use current location" is triggered
     LaunchedEffect(shouldUseCurrentLocation) {
-        if (shouldUseCurrentLocation && userLocation != null) {
-            camera.animateTo(
-                finalPosition = CameraPosition(
-                    target = Position(latitude = userLocation!!.first, longitude = userLocation!!.second),
-                    zoom = 15.0
-                ),
-                duration = 0.8.seconds
-            )
+        if (shouldUseCurrentLocation) {
+            userLocation?.let { (lat, long) ->
+                camera.animateTo(
+                    finalPosition = CameraPosition(
+                        target = Position(
+                            latitude = lat,
+                            longitude = long
+                        ),
+                        zoom = 15.0
+                    ),
+                    duration = 0.8.seconds
+                )
+            }
         }
     }
 
@@ -183,18 +190,26 @@ fun IncidentMap(
                     }
                 }
             ) {
-                // Incidents source
+
+                // Incidents source - recompute when incidents change
+                val incidentsGeoJson = remember(
+                    incidents,
+                    incidents.map { it.id to it.latitude to it.longitude }
+
+                ) {
+                    createIncidentsGeoJson(incidents).takeIf { it.features.isNotEmpty() }
+                        ?: FeatureCollection(features = listOf(
+                            Feature(
+                                geometry = Point(Position(0.0, 0.0)),
+                                properties = buildJsonObject { }
+                            )
+                        ))
+                }
+
                 val incidentsSource = rememberGeoJsonSource(
-                    GeoJsonData.Features(
-                        createIncidentsGeoJson(incidents).takeIf { it.features.isNotEmpty() }
-                            ?: FeatureCollection(features = listOf(
-                                Feature(
-                                    geometry = Point(Position(0.0, 0.0)),
-                                    properties = buildJsonObject { }
-                                )
-                            ))
-                    )
+                    GeoJsonData.Features(incidentsGeoJson)
                 )
+
 
                 // Selected location source
                 val selectedLocationSource = selectedLocation?.let { location ->

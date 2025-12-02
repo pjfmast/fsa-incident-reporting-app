@@ -25,6 +25,7 @@ import com.example.incidentscompose.viewmodel.LoginUiState
 import com.example.incidentscompose.viewmodel.LoginState
 import com.example.incidentscompose.viewmodel.LoginViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
 @Composable
@@ -34,8 +35,8 @@ fun LoginScreen(
     onNavigateToReport: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    val isBusy by viewModel.isLoading.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.checkAutoLogin()

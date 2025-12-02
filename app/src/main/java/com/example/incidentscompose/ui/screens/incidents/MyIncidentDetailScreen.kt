@@ -44,6 +44,7 @@ import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisp
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.MyIncidentDetailViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun MyIncidentDetailScreen(
@@ -61,8 +62,8 @@ fun MyIncidentDetailScreen(
 
     val context = LocalContext.current
     val selectedIncidentFlow = viewModel.selectedIncident
-    val isBusy by viewModel.isLoading.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val isBusy by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Collect incident from the flow
     LaunchedEffect(Unit) {
@@ -87,15 +88,18 @@ fun MyIncidentDetailScreen(
             } else {
                 Toast.makeText(
                     context,
-                    "$failureUpdateMessage ${when (result) {
-                        is ApiResult.HttpError -> result.message
-                        is ApiResult.NetworkError -> result.exception.message
-                        is ApiResult.Unauthorized -> {
-                            onNavigateBack()
-                            ""
+                    "$failureUpdateMessage ${
+                        when (result) {
+                            is ApiResult.HttpError -> result.message
+                            is ApiResult.NetworkError -> result.exception.message
+                            is ApiResult.Unauthorized -> {
+                                onNavigateBack()
+                                ""
+                            }
+
+                            else -> "Unknown error"
                         }
-                        else -> "Unknown error"
-                    }}",
+                    }",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -114,15 +118,18 @@ fun MyIncidentDetailScreen(
             } else {
                 Toast.makeText(
                     context,
-                    "$failureDeleteMessage ${when (result) {
-                        is ApiResult.HttpError -> result.message
-                        is ApiResult.NetworkError -> result.exception.message
-                        is ApiResult.Unauthorized -> {
-                            onNavigateBack()
-                            ""
+                    "$failureDeleteMessage ${
+                        when (result) {
+                            is ApiResult.HttpError -> result.message
+                            is ApiResult.NetworkError -> result.exception.message
+                            is ApiResult.Unauthorized -> {
+                                onNavigateBack()
+                                ""
+                            }
+
+                            else -> "Unknown error"
                         }
-                        else -> "Unknown error"
-                    }}",
+                    }",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -295,7 +302,9 @@ fun MyIncidentDetailScreen(
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            if (incident == null) {
+            // local 'val' so smart cast works
+            val currentIncident = incident
+            if (currentIncident == null) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -308,36 +317,34 @@ fun MyIncidentDetailScreen(
                 }
             } else {
                 IncidentDetailContent(
-                    incident = incident!!,
+                    incident = currentIncident,
                     selectedCategory = selectedCategory,
                     editableDescription = editableDescription,
                     selectedLocation = selectedLocation, // Pass the location
                     onCategoryChange = { selectedCategory = it },
                     onDescriptionChange = { editableDescription = it },
-                    onLocationSelected = { lat, lon -> selectedLocation = lat to lon }, // Handle location selection
+                    onLocationSelected = { lat, lon ->
+                        selectedLocation = lat to lon
+                    }, // Handle location selection
                     onSave = {
-                        incident?.let { inc ->
-                            if (inc.status == Status.RESOLVED) {
-                                showResolvedDialog = true
-                            } else {
-                                viewModel.updateIncident(
-                                    incidentId = inc.id,
-                                    category = selectedCategory,
-                                    description = editableDescription.takeIf { it.isNotBlank() },
-                                    latitude = selectedLocation?.first, // Pass latitude
-                                    longitude = selectedLocation?.second // Pass longitude
-                                )
-                            }
+                        if (currentIncident.status == Status.RESOLVED) {
+                            showResolvedDialog = true
+                        } else {
+                            viewModel.updateIncident(
+                                incidentId = currentIncident.id,
+                                category = selectedCategory,
+                                description = editableDescription.takeIf { it.isNotBlank() },
+                                latitude = selectedLocation?.first, // Pass latitude
+                                longitude = selectedLocation?.second // Pass longitude
+                            )
                         }
                     },
                     onDelete = {
-                        incident?.let { inc ->
-                            val status = inc.status
-                            if (status == Status.ASSIGNED || status == Status.RESOLVED) {
-                                showCannotDeleteDialog = true
-                            } else {
-                                showDeleteConfirmDialog = true
-                            }
+                        val status = currentIncident.status
+                        if (status == Status.ASSIGNED || status == Status.RESOLVED) {
+                            showCannotDeleteDialog = true
+                        } else {
+                            showDeleteConfirmDialog = true
                         }
                     }
                 )
@@ -618,8 +625,10 @@ private fun IncidentHeaderCard(
                         )
                     }
                     Text(
-                        text = incident.completedAt?.let { formatDateForDisplay(it) } ?: stringResource(
-                            R.string.not_completed),
+                        text = incident.completedAt?.let { formatDateForDisplay(it) }
+                            ?: stringResource(
+                                R.string.not_completed
+                            ),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF111827)
