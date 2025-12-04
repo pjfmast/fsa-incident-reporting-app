@@ -152,7 +152,7 @@ private fun ReportIncidentContent(
     onCategorySelected: (IncidentCategory) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onAddPhotoClick: () -> Unit,
-    onRemovePhoto: (android.net.Uri) -> Unit,
+    onRemovePhoto: (Uri) -> Unit,
     onUseCurrentLocation: () -> Unit,
     onLocationSelected: (Double, Double) -> Unit,
     onMapTouch: (Boolean) -> Unit,
@@ -249,7 +249,7 @@ private fun ReportIncidentDialogs(
     }
 }
 
-// Component Composables
+// Component Composable
 
 @Composable
 fun WarningBanner() {

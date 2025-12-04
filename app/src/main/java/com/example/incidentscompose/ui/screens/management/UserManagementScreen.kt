@@ -146,7 +146,7 @@ fun UserManagementScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                SearchBar(
+                UserSearchBar(
                     searchQuery = searchQuery,
                     onSearchQueryChange = { searchQuery = it },
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -208,7 +208,7 @@ fun UserManagementScreen(
 }
 
 @Composable
-fun SearchBar(
+fun UserSearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -403,7 +403,7 @@ fun UserCard(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { expanded = true },
-                    color = getRoleColor(selectedRole),
+                    color = selectedRole.color(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Row(
@@ -445,10 +445,10 @@ fun UserCard(
                                         modifier = Modifier
                                             .size(12.dp)
                                             .background(
-                                                getRoleColor(role),
+                                                role.color(),
                                                 shape = CircleShape
                                             )
-                                    )
+                                        )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = role.name,
@@ -521,9 +521,8 @@ fun DeleteConfirmationDialog(
     )
 }
 
-@Composable
-fun getRoleColor(role: Role): Color {
-    return when (role) {
+fun Role.color(): Color {
+    return when (this) {
         Role.ADMIN -> Color(0xFFE53935)
         Role.OFFICIAL -> Color(0xFF1E88E5)
         Role.USER -> Color(0xFF43A047)

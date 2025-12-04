@@ -41,7 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 
 @Composable
-fun IncidentListScreen(
+fun AllIncidentListScreen(
     onNavigateToDetail: (Long) -> Unit,
     onNavigateToIncidentMap: () -> Unit,
     onNavigateToUserManagement: () -> Unit,

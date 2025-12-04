@@ -196,7 +196,7 @@ private fun <T : Enum<T>> FilterSection(
         fontWeight = FontWeight.Bold
     )
 
-    HorizontalScrollableFilterChipGroup(
+    FilterChipRow(
         options = options,
         selectedOptions = selectedOptions.toList(),
         onOptionsSelected = onOptionsSelected
@@ -204,7 +204,7 @@ private fun <T : Enum<T>> FilterSection(
 }
 
 @Composable
-fun <T : Enum<T>> HorizontalScrollableFilterChipGroup(
+fun <T : Enum<T>> FilterChipRow(
     options: List<T>,
     selectedOptions: List<T>,
     onOptionsSelected: (List<T>) -> Unit

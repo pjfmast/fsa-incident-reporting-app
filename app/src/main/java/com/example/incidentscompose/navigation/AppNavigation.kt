@@ -12,7 +12,7 @@ import com.example.incidentscompose.ui.screens.auth.UserProfileScreen
 import com.example.incidentscompose.ui.screens.incidents.MyIncidentDetailScreen
 import com.example.incidentscompose.ui.screens.incidents.MyIncidentListScreen
 import com.example.incidentscompose.ui.screens.management.IncidentDetailScreen
-import com.example.incidentscompose.ui.screens.management.IncidentListScreen
+import com.example.incidentscompose.ui.screens.management.AllIncidentListScreen
 import com.example.incidentscompose.ui.screens.management.IncidentMapScreen
 import com.example.incidentscompose.ui.screens.management.UserManagementScreen
 import com.example.incidentscompose.ui.screens.incidents.ReportIncidentScreen
@@ -105,7 +105,7 @@ fun AppNavigation() {
             }
 
             entry<IncidentListKey> {
-                IncidentListScreen(
+                AllIncidentListScreen(
                     onNavigateToDetail = { incidentId: Long ->
                         backStack.add(IncidentDetailKey(incidentId))
                     },
