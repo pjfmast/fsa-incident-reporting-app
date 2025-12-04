@@ -21,9 +21,9 @@ To enhance communication between citizens and municipal services, enabling effic
 - **Android SDK** 36 (minimum SDK 33)
 
 ### UI Framework
-- **Jetpack Compose** (BOM 2025.11.01)
+- **Jetpack Compose** (BOM 2025.12.00)
 - **Material 3** 1.4.0
-- **Material Icons Extended**
+- **Material Symbols and Icons as recommended here: https://developer.android.com/jetpack/androidx/releases/compose-material3#1.4.0**
 - **Coil** 2.7.0 - Image loading
 
 ### Architecture & Dependencies
