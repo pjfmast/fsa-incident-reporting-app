@@ -1,8 +1,8 @@
 # Incidents – Communal Incident Reporting
 
-Incidents is a modern application designed to simplify public incident reporting and management. Originally developed as a graduation project, it connects citizens with municipal services through a responsive and secure platform.  
-This version is implemented using Kotlin with Jetpack Compose for the mobile client, integrating with a shared backend API. The focus is on a clean, maintainable architecture and smooth user experience across devices.  
-This project started as my graduation project for my Computing Science Associate Degree in C# and has been rewritten in Kotlin, in collaboration with Avans University of Applied Sciences.
+Android with Jetpack Compose app for reporting and tracking public incidents.
+Many thanks to [Gerjan van den Oever] (https://github.com/gerjanvdoever) for the initial Compose implementation.
+This project works in combination with the [Incidents REST API](https://github.com/pjfmast/ktor-incident-api)
 
 ## Key Points
 - Mobile client built in Jetpack Compose (Android).  
@@ -12,3 +12,35 @@ This project started as my graduation project for my Computing Science Associate
 
 ## Goal
 To enhance communication between citizens and municipal services, enabling efficient, transparent handling of public incidents.
+
+
+## Technology Stack
+
+### Core
+- **Kotlin** 2.2.21
+- **Android SDK** 36 (minimum SDK 33)
+
+### UI Framework
+- **Jetpack Compose** (BOM 2025.11.01)
+- **Material 3** 1.4.0
+- **Material Icons Extended**
+- **Coil** 2.7.0 - Image loading
+
+### Architecture & Dependencies
+- **Koin** 4.2.0-alpha3 - Dependency injection
+- **Navigation3** 1.0.0 - Navigation framework
+- **Lifecycle & ViewModel** 2.10.0
+
+### Networking
+- **Ktor Client** 3.3.3
+    - CIO engine
+    - Content negotiation
+- **Kotlinx Serialization** 1.9.0
+
+### Data & Storage
+- **DataStore Preferences** 1.2.0
+- **Kotlinx DateTime** 0.7.1
+
+### Maps & Location
+- **MapLibre Compose** 0.12.1
+- **Google Play Services Location** 21.3.0

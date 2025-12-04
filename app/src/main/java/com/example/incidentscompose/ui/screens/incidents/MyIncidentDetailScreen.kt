@@ -10,11 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -149,7 +144,7 @@ fun MyIncidentDetailScreen(
             onDismissRequest = { showResolvedDialog = false },
             icon = {
                 Icon(
-                    imageVector = Icons.Outlined.CheckCircle,
+                    painter = painterResource(R.drawable.check_circle_rounded_filled_24px),
                     contentDescription = null,
                     tint = Color(0xFF16A34A),
                     modifier = Modifier.size(48.dp)
@@ -190,7 +185,7 @@ fun MyIncidentDetailScreen(
             onDismissRequest = { showCannotDeleteDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete),
+                    painter = painterResource(id = R.drawable.delete_rounded_24px),
                     contentDescription = null,
                     tint = Color(0xFFEF4444),
                     modifier = Modifier.size(48.dp)
@@ -231,7 +226,7 @@ fun MyIncidentDetailScreen(
             onDismissRequest = { showDeleteConfirmDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete),
+                    painter = painterResource(id = R.drawable.delete_rounded_24px),
                     contentDescription = null,
                     tint = Color(0xFFD32F2F),
                     modifier = Modifier.size(48.dp)
@@ -445,7 +440,7 @@ private fun ActionButtons(
             contentPadding = PaddingValues(0.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.delete),
+                painter = painterResource(id = R.drawable.delete_rounded_24px),
                 contentDescription = stringResource(R.string.delete_incident),
                 modifier = Modifier.size(24.dp)
             )
@@ -511,7 +506,7 @@ private fun IncidentHeaderCard(
                                 color = Color(0xFF111827)
                             )
                             Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowDown,
+                                painter = painterResource(R.drawable.arrow_drop_down_rounded_24px),
                                 contentDescription = "Expand",
                                 tint = Color(0xFF6B7280)
                             )
@@ -579,7 +574,7 @@ private fun IncidentHeaderCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.DateRange,
+                            painter = painterResource(R.drawable.date_range_rounded_24px),
                             contentDescription = null,
                             tint = Color(0xFF6B7280),
                             modifier = Modifier.size(16.dp)
@@ -609,7 +604,7 @@ private fun IncidentHeaderCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
+                            painter = painterResource(R.drawable.check_circle_rounded_24px),
                             contentDescription = null,
                             tint = Color(0xFF6B7280),
                             modifier = Modifier.size(16.dp)
@@ -660,13 +655,24 @@ private fun IncidentDescriptionCard(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = stringResource(R.string.description),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.8.sp
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.description_rounded_24px),
+                    contentDescription = null,
+                    tint = Color(0xFF6B7280),
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = stringResource(R.string.description),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF6B7280),
+                    letterSpacing = 0.8.sp
+                )
+            }
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -717,13 +723,24 @@ private fun IncidentImagesCard(incident: IncidentResponse) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.photos),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 0.8.sp
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.image_rounded_24px),
+                        contentDescription = null,
+                        tint = Color(0xFF6B7280),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.photos),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280),
+                        letterSpacing = 0.8.sp
+                    )
+                }
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = Color(0xFFF3F4F6)
@@ -824,7 +841,7 @@ private fun IncidentLocationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.LocationOn,
+                    painter = painterResource(R.drawable.location_on_rounded_24px),
                     contentDescription = null,
                     tint = Color(0xFF6B7280),
                     modifier = Modifier.size(16.dp)

@@ -7,8 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +16,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -189,8 +188,6 @@ private fun ReportIncidentContent(
         )
 
         MapLocationCard(
-            latitude = uiState.latitude,
-            longitude = uiState.longitude,
             shouldRequestLocationPermission = uiState.shouldRequestLocationPermission,
             shouldUseCurrentLocation = uiState.shouldUseCurrentLocation,
             onUseCurrentLocation = onUseCurrentLocation,
@@ -465,7 +462,7 @@ fun PhotoUploadCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.Add,
+                                painter = painterResource(id = R.drawable.add_rounded_24px),
                                 contentDescription = "Add",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
@@ -504,7 +501,7 @@ fun PhotoUploadCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.Close,
+                                painter = painterResource(id = R.drawable.close_rounded_24px),
                                 contentDescription = "Remove",
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
@@ -519,8 +516,6 @@ fun PhotoUploadCard(
 
 @Composable
 fun MapLocationCard(
-    latitude: Double?,
-    longitude: Double?,
     shouldRequestLocationPermission: Boolean,
     shouldUseCurrentLocation: Boolean,
     onUseCurrentLocation: () -> Unit,
@@ -596,7 +591,7 @@ fun MapLocationCard(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
                 Icon(
-                    Icons.Default.LocationOn,
+                    painter = painterResource(id = R.drawable.location_on_rounded_filled_24px),
                     contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
@@ -751,7 +746,7 @@ fun PermissionDeniedDialog(onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Warning,
+                    painter = painterResource(id = R.drawable.warning_rounded_filled_24px),
                     contentDescription = "Warning",
                     modifier = Modifier.size(64.dp),
                     tint = Color(0xFFF59E0B)
@@ -821,7 +816,7 @@ fun ReportSuccessDialog(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.CheckCircle,
+                    painter = painterResource(id = R.drawable.check_circle_rounded_filled_24px),
                     contentDescription = stringResource(R.string.success),
                     modifier = Modifier.size(64.dp),
                     tint = Color(0xFF10B981)

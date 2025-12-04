@@ -9,22 +9,17 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -101,7 +96,7 @@ fun IncidentDetailScreen(
             onDismissRequest = { showDeleteConfirmDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete),
+                    painter = painterResource(id = R.drawable.delete_rounded_24px),
                     contentDescription = null,
                     tint = Color(0xFFD32F2F),
                     modifier = Modifier.size(48.dp)
@@ -267,7 +262,7 @@ private fun FullscreenImageDialog(
                     )
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Close,
+                    painter = painterResource(id = R.drawable.close_rounded_24px),
                     contentDescription = "Close",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -346,7 +341,7 @@ private fun DeleteButton(onDelete: () -> Unit) {
         border = BorderStroke(1.5.dp, Color(0xFFD32F2F))
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.delete),
+            painter = painterResource(id = R.drawable.delete_rounded_24px),
             contentDescription = stringResource(R.string.delete_incident),
             modifier = Modifier.size(20.dp)
         )
@@ -443,7 +438,7 @@ private fun IncidentManagementHeaderCard(
                                 color = getPriorityColor(incident.priority)
                             )
                             Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowDown,
+                                painter = painterResource(id = R.drawable.arrow_drop_down_rounded_24px),
                                 contentDescription = "Expand",
                                 tint = getPriorityColor(incident.priority)
                             )
@@ -519,7 +514,7 @@ private fun IncidentManagementHeaderCard(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowDown,
+                                painter = painterResource(id = R.drawable.arrow_drop_down_rounded_24px),
                                 contentDescription = "Expand",
                                 tint = getStatusColor(incident.status)
                             )
@@ -574,7 +569,8 @@ private fun IncidentManagementHeaderCard(
                     DateInfoRow(
                         label = stringResource(R.string.completed),
                         date = formatDateForDisplay(incident.completedAt),
-                        icon = Icons.Outlined.CheckCircle
+                        icon = ImageVector.vectorResource(id = R.drawable.check_circle_rounded_24px)
+
                     )
                 }
             }
@@ -586,7 +582,7 @@ private fun IncidentManagementHeaderCard(
 private fun DateInfoRow(
     label: String,
     date: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Outlined.DateRange
+    icon: ImageVector = ImageVector.vectorResource(id = R.drawable.date_range_rounded_24px)
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -647,7 +643,7 @@ private fun ReporterInfoCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Person,
+                    painter = painterResource(id = R.drawable.person_rounded_24px),
                     contentDescription = null,
                     tint = Color(0xFF6B7280),
                     modifier = Modifier.size(16.dp)
@@ -675,7 +671,7 @@ private fun ReporterInfoCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Person,
+                                painter = painterResource(id = R.drawable.person_rounded_24px),
                                 contentDescription = null,
                                 tint = Color(0xFFD97706),
                                 modifier = Modifier.size(32.dp)
@@ -705,7 +701,7 @@ private fun ReporterInfoCard(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.delete),
+                                painter = painterResource(id = R.drawable.delete_rounded_24px),
                                 contentDescription = null,
                                 tint = Color(0xFFDC2626),
                                 modifier = Modifier.size(32.dp)
@@ -986,7 +982,7 @@ private fun IncidentLocationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.LocationOn,
+                    painter = painterResource(id = R.drawable.location_on_rounded_24px),
                     contentDescription = null,
                     tint = Color(0xFF6B7280),
                     modifier = Modifier.size(16.dp)

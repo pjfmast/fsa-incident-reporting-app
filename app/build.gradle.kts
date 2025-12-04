@@ -62,8 +62,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
+    // Serialization
     implementation(libs.kotlinx.serialization.core)
     // Koin
     implementation(platform(libs.koin.bom))
@@ -84,8 +83,8 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
     // Material Icons
-    implementation(libs.androidx.material.icons.core)
-    implementation(libs.androidx.material.icons.extended)
+//    implementation(libs.androidx.material.icons.core)
+//    implementation(libs.androidx.material.icons.extended)
     // Nav3
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)

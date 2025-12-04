@@ -13,10 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -87,7 +83,8 @@ fun MyIncidentListScreen(
 
     val fullName = uiState.user?.username ?: stringResource(R.string.loading)
     val totalIncidents = uiState.incidents.size
-    val activeIncidents = uiState.incidents.count { it.status == Status.REPORTED || it.status == Status.RESOLVED }
+    val activeIncidents =
+        uiState.incidents.count { it.status == Status.ASSIGNED  }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -144,7 +141,8 @@ private fun MyIncidentListContent(
 ) {
     val fullName = uiState.user?.username ?: stringResource(R.string.loading)
     val totalIncidents = uiState.incidents.size
-    val activeIncidents = uiState.incidents.count { it.status == Status.REPORTED || it.status == Status.RESOLVED }
+    val activeIncidents =
+        uiState.incidents.count { it.status == Status.ASSIGNED }
 
     var isDropdownVisible by remember { mutableStateOf(false) }
 
@@ -186,7 +184,7 @@ private fun MyIncidentListContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Person,
+                            painter = painterResource(id = R.drawable.person_rounded_24px),
                             contentDescription = "User Avatar",
                             tint = Color(0xFF0D47A1),
                             modifier = Modifier.size(32.dp)
@@ -220,7 +218,7 @@ private fun MyIncidentListContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            painter = painterResource(id = R.drawable.settings_rounded_24px),
                             contentDescription = "Settings",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -304,7 +302,7 @@ private fun MyIncidentListContent(
             shape = CircleShape
         ) {
             Icon(
-                imageVector = Icons.Default.Add,
+                painter = painterResource(id = R.drawable.add_rounded_24px),
                 contentDescription = stringResource(R.string.create_incident),
                 tint = Color.White,
                 modifier = Modifier.size(28.dp)
@@ -345,7 +343,7 @@ private fun MyIncidentListContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.userprofile),
+                                    painter = painterResource(id = R.drawable.user_attributes_rounded_24px),
                                     contentDescription = "User profile",
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -376,7 +374,7 @@ private fun MyIncidentListContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.language),
+                                    painter = painterResource(id = R.drawable.language_rounded_24px),
                                     contentDescription = "Language settings",
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -404,7 +402,7 @@ private fun MyIncidentListContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.logout),
+                                    painter = painterResource(id = R.drawable.logout_rounded_24px),
                                     contentDescription = "Logout",
                                     tint = Color(0xFFD32F2F),
                                     modifier = Modifier.size(20.dp)

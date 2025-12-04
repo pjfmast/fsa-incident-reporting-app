@@ -46,7 +46,7 @@
     <string name="loading">Loading…</string>
     <string name="account_dashboard">Account Dashboard</string>
     <string name="total_incidents">Total Incidents</string>
-    <string name="active">Active</string>
+    <string name="active">Working on it</string>
     <string name="my_incidents">My incidents</string>
     <string name="no_incidents_found">No incidents found.</string>
     <string name="create_incident">Create Incident</string>

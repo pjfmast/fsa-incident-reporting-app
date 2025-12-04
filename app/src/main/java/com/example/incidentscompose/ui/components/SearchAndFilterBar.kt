@@ -5,14 +5,12 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,7 +70,7 @@ private fun SearchTextField(
         placeholder = { Text(stringResource(R.string.search_incidents)) },
         leadingIcon = {
             Icon(
-                imageVector = Icons.Default.Search,
+                painter = painterResource(id = R.drawable.search_rounded_24px),
                 contentDescription = stringResource(R.string.search)
             )
         },
@@ -97,7 +95,7 @@ private fun FilterIconButton(
             )
     ) {
         Icon(
-            imageVector = Icons.Default.Menu,
+            painter = painterResource(id = R.drawable.list_rounded_24px),
             contentDescription = stringResource(R.string.filter),
             tint = if (hasActiveFilters) MaterialTheme.colorScheme.onPrimary
             else MaterialTheme.colorScheme.onSurfaceVariant

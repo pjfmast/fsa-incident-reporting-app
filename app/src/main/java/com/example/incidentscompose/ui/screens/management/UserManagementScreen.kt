@@ -21,10 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -78,7 +74,7 @@ fun UserManagementScreen(
     onNavigateToIncidentList: () -> Unit,
     onNavigateToIncidentMap: () -> Unit,
     viewModel: UserManagementViewModel = koinViewModel()
-){
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -105,7 +101,11 @@ fun UserManagementScreen(
 
     LaunchedEffect(uiState.toastMessage) {
         if (uiState.toastMessage != null) {
-            android.widget.Toast.makeText(context, uiState.toastMessage, android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(
+                context,
+                uiState.toastMessage,
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
             viewModel.clearToastMessage()
         }
     }
@@ -227,7 +227,7 @@ fun SearchBar(
         },
         leadingIcon = {
             Icon(
-                imageVector = Icons.Default.Search,
+                painter = painterResource(id = R.drawable.search_rounded_24px),
                 contentDescription = stringResource(R.string.search),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -236,7 +236,7 @@ fun SearchBar(
             if (searchQuery.isNotEmpty()) {
                 IconButton(onClick = { onSearchQueryChange("") }) {
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        painter = painterResource(id = R.drawable.close_rounded_24px),
                         contentDescription = "Clear search",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -294,7 +294,7 @@ fun UserItem(
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.delete),
+                        painter = painterResource(id = R.drawable.delete_rounded_filled_24px),
                         contentDescription = "Delete",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -421,7 +421,7 @@ fun UserCard(
                             modifier = Modifier.weight(1f)
                         )
                         Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
+                            painter = painterResource(id = R.drawable.arrow_drop_down_rounded_24px),
                             contentDescription = "Change role",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -481,7 +481,7 @@ fun DeleteConfirmationDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                painter = painterResource(id = R.drawable.delete),
+                painter = painterResource(id = R.drawable.delete_rounded_filled_24px),
                 contentDescription = "Delete",
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(32.dp)

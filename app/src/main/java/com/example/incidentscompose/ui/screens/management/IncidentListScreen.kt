@@ -33,12 +33,12 @@ import com.example.incidentscompose.util.IncidentDisplayHelper
 import com.example.incidentscompose.viewmodel.IncidentManagementViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 
 @Composable
 fun IncidentListScreen(
@@ -189,7 +189,7 @@ fun IncidentCard(
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = ImageVector.vectorResource(id = R.drawable.delete_rounded_24px),
                     contentDescription = "Delete incident",
                     tint = Color.White
                 )

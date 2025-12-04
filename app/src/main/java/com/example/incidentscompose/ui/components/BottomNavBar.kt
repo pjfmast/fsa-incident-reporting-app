@@ -27,34 +27,39 @@ import com.example.incidentscompose.data.model.Role
 sealed class BottomNavItem(
     val key: NavKey,
     val titleResId: Int,
-    val icon: Int,
+    val unselectedIcon: Int,
+    val selectedIcon: Int,
     val requiredRoles: Set<Role>
 ) {
     data object List : BottomNavItem(
         key = IncidentListKey,
         titleResId = R.string.list,
-        icon = R.drawable.list,
+        unselectedIcon = R.drawable.list_rounded_24px,
+        selectedIcon = R.drawable.list_rounded_filled_24px,
         requiredRoles = setOf(Role.OFFICIAL, Role.ADMIN)
     )
 
     data object Map : BottomNavItem(
         key = IncidentMapKey,
         titleResId = R.string.map,
-        icon = R.drawable.map,
+        unselectedIcon = R.drawable.map_rounded_24px,
+        selectedIcon = R.drawable.map_rounded_filled_24px,
         requiredRoles = setOf(Role.OFFICIAL, Role.ADMIN)
     )
 
     data object Users : BottomNavItem(
         key = UserManagementKey,
         titleResId = R.string.users,
-        icon = R.drawable.users,
+        unselectedIcon = R.drawable.users_rounded_24px,
+        selectedIcon = R.drawable.users_rounded_filled_24px,
         requiredRoles = setOf(Role.ADMIN)
     )
 
     data object Profile : BottomNavItem(
         key = MyIncidentListKey,
         titleResId = R.string.profile,
-        icon = R.drawable.profile,
+        unselectedIcon = R.drawable.account_circle_rounded_24px,
+        selectedIcon = R.drawable.account_circle_rounded_filled_24px,
         requiredRoles = setOf(Role.OFFICIAL, Role.ADMIN)
     )
 }
@@ -91,7 +96,7 @@ fun BottomNavBar(
                 onClick = { onNavigateTo(item.key) },
                 icon = {
                     Icon(
-                        painter = painterResource(id = item.icon),
+                        painter = painterResource(id = if (isSelected) item.selectedIcon else item.unselectedIcon),
                         contentDescription = stringResource(item.titleResId),
                         modifier = Modifier.size(32.dp)
                     )
