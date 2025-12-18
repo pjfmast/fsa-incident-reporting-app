@@ -17,11 +17,11 @@ To enhance communication between citizens and municipal services, enabling effic
 ## Technology Stack
 
 ### Core
-- **Kotlin** 2.2.21
+- **Kotlin** 2.3.0
 - **Android SDK** 36 (minimum SDK 33)
 
 ### UI Framework
-- **Jetpack Compose** (BOM 2025.12.00)
+- **Jetpack Compose** (BOM 2025.12.01)
 - **Material 3** 1.4.0
 - **Material Symbols and Icons as recommended here: https://developer.android.com/jetpack/androidx/releases/compose-material3#1.4.0**
 - **Coil** 2.7.0 - Image loading

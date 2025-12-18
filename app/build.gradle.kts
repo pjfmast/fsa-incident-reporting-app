@@ -82,7 +82,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     // Coil
     implementation(libs.coil.compose)
-    // Material Icons
+    //  The androidx.compose.material.icons library is no longer recommended for
+    //  displaying Material Icons in Compose, as Material Symbols are the new way forward.
 //    implementation(libs.androidx.material.icons.core)
 //    implementation(libs.androidx.material.icons.extended)
     // Nav3

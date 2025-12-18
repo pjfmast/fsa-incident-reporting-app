@@ -12,7 +12,6 @@ import java.io.IOException
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.ExperimentalTime
 
 object PhotoUtils {
 
@@ -82,7 +81,6 @@ object PhotoUtils {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     fun createTimestamp(): String {
         val now = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         return "%04d%02d%02d_%02d%02d%02d".format(

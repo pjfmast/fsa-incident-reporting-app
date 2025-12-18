@@ -6,7 +6,6 @@ import com.example.incidentscompose.data.model.Status
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 object IncidentDisplayHelper {
@@ -18,7 +17,6 @@ object IncidentDisplayHelper {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     fun formatDateForDisplay(dateString: String): String {
         return try {
             val normalized = if (!dateString.endsWith("Z")) "${dateString}Z" else dateString
