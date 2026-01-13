@@ -4,11 +4,47 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,7 +52,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,19 +60,25 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.incidentscompose.R
 import com.example.incidentscompose.data.model.IncidentCategory
 import com.example.incidentscompose.ui.components.IncidentMap
 import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.ui.components.TopNavBar
+import com.example.incidentscompose.ui.icons.AddIcon
+import com.example.incidentscompose.ui.icons.CheckCircleFilledIcon
+import com.example.incidentscompose.ui.icons.CloseIcon
+import com.example.incidentscompose.ui.icons.LocationOnFilledIcon
+import com.example.incidentscompose.ui.icons.WarningFilledIcon
 import com.example.incidentscompose.util.PhotoPermissionHandler
 import com.example.incidentscompose.util.PhotoUtils
 import com.example.incidentscompose.util.rememberPhotoPermissionLauncher
 import com.example.incidentscompose.viewmodel.ReportIncidentUiState
 import com.example.incidentscompose.viewmodel.ReportIncidentViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 @Composable
 fun ReportIncidentScreen(
     onNavigateBack: () -> Unit,
@@ -462,7 +503,7 @@ fun PhotoUploadCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.add_rounded_24px),
+                                imageVector = AddIcon,
                                 contentDescription = "Add",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
@@ -501,7 +542,7 @@ fun PhotoUploadCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.close_rounded_24px),
+                                imageVector = CloseIcon,
                                 contentDescription = "Remove",
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
@@ -591,7 +632,7 @@ fun MapLocationCard(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.location_on_rounded_filled_24px),
+                    imageVector = LocationOnFilledIcon,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
@@ -746,7 +787,7 @@ fun PermissionDeniedDialog(onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.warning_rounded_filled_24px),
+                    imageVector = WarningFilledIcon,
                     contentDescription = "Warning",
                     modifier = Modifier.size(64.dp),
                     tint = Color(0xFFF59E0B)
@@ -816,7 +857,7 @@ fun ReportSuccessDialog(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.check_circle_rounded_filled_24px),
+                    imageVector = CheckCircleFilledIcon,
                     contentDescription = stringResource(R.string.success),
                     modifier = Modifier.size(64.dp),
                     tint = Color(0xFF10B981)

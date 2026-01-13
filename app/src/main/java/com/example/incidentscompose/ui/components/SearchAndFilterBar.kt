@@ -10,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,6 +18,9 @@ import com.example.incidentscompose.R
 import com.example.incidentscompose.data.model.Priority
 import com.example.incidentscompose.data.model.Status
 import com.example.incidentscompose.data.model.IncidentCategory
+import com.example.incidentscompose.ui.icons.FilterListFilledIcon
+import com.example.incidentscompose.ui.icons.FilterListIcon
+import com.example.incidentscompose.ui.icons.SearchIcon
 
 @Composable
 fun SearchAndFilterBar(
@@ -70,7 +72,7 @@ private fun SearchTextField(
         placeholder = { Text(stringResource(R.string.search_incidents)) },
         leadingIcon = {
             Icon(
-                painter = painterResource(id = R.drawable.search_rounded_24px),
+                imageVector = SearchIcon,
                 contentDescription = stringResource(R.string.search)
             )
         },
@@ -95,7 +97,7 @@ private fun FilterIconButton(
             )
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.list_rounded_24px),
+            imageVector = if (hasActiveFilters) FilterListFilledIcon else FilterListIcon,
             contentDescription = stringResource(R.string.filter),
             tint = if (hasActiveFilters) MaterialTheme.colorScheme.onPrimary
             else MaterialTheme.colorScheme.onSurfaceVariant

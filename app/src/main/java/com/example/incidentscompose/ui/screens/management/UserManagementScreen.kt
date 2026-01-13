@@ -50,11 +50,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.incidentscompose.R
 import com.example.incidentscompose.data.model.Role
 import com.example.incidentscompose.data.model.UserResponse
@@ -64,9 +64,12 @@ import com.example.incidentscompose.navigation.MyIncidentListKey
 import com.example.incidentscompose.navigation.UserManagementKey
 import com.example.incidentscompose.ui.components.BottomNavBar
 import com.example.incidentscompose.ui.components.LoadingOverlay
+import com.example.incidentscompose.ui.icons.ArrowDropDownIcon
+import com.example.incidentscompose.ui.icons.CloseIcon
+import com.example.incidentscompose.ui.icons.DeleteFilledIcon
+import com.example.incidentscompose.ui.icons.SearchIcon
 import com.example.incidentscompose.viewmodel.UserManagementViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun UserManagementScreen(
@@ -227,7 +230,7 @@ fun UserSearchBar(
         },
         leadingIcon = {
             Icon(
-                painter = painterResource(id = R.drawable.search_rounded_24px),
+                imageVector = SearchIcon,
                 contentDescription = stringResource(R.string.search),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -236,7 +239,7 @@ fun UserSearchBar(
             if (searchQuery.isNotEmpty()) {
                 IconButton(onClick = { onSearchQueryChange("") }) {
                     Icon(
-                        painter = painterResource(id = R.drawable.close_rounded_24px),
+                        imageVector = CloseIcon,
                         contentDescription = "Clear search",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -294,7 +297,7 @@ fun UserItem(
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.delete_rounded_filled_24px),
+                        imageVector = DeleteFilledIcon,
                         contentDescription = "Delete",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -421,7 +424,7 @@ fun UserCard(
                             modifier = Modifier.weight(1f)
                         )
                         Icon(
-                            painter = painterResource(id = R.drawable.arrow_drop_down_rounded_24px),
+                            imageVector = ArrowDropDownIcon,
                             contentDescription = "Change role",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -481,7 +484,7 @@ fun DeleteConfirmationDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                painter = painterResource(id = R.drawable.delete_rounded_filled_24px),
+                imageVector = DeleteFilledIcon,
                 contentDescription = "Delete",
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(32.dp)

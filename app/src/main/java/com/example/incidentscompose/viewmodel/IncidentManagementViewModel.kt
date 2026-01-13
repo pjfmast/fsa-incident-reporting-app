@@ -42,7 +42,7 @@ class IncidentManagementViewModel(
 
     init {
         loadUserRole()
-        getAllIncidents()
+        loadAllIncidents()
     }
 
     private fun loadUserRole() {
@@ -53,7 +53,10 @@ class IncidentManagementViewModel(
         }
     }
 
-    fun getAllIncidents() {
+    fun loadAllIncidents(forceRefresh: Boolean = false) {
+        if (!forceRefresh && _uiState.value.allIncidents.isNotEmpty())
+            return
+
         viewModelScope.launch {
             withLoading {
                 when (val result = incidentRepository.getAllIncidents()) {
@@ -205,6 +208,6 @@ class IncidentManagementViewModel(
 
     fun refreshIncidents() {
         currentDisplayCount = 0
-        getAllIncidents()
+        loadAllIncidents()
     }
 }

@@ -15,6 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.incidentscompose.data.model.IncidentCategory
 import com.example.incidentscompose.data.model.IncidentResponse
@@ -47,6 +49,11 @@ fun IncidentMapScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val filteredIncidents = uiState.filteredIncidents
     val hasActiveFilters by remember { derivedStateOf { viewModel.hasActiveFilters } }
+
+    // Refresh data each time user navigates back to this screen
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.loadAllIncidents()
+    }
 
     LaunchedEffect(unauthorizedState) {
         if (unauthorizedState) {

@@ -13,53 +13,63 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.incidentscompose.R
+
+import com.example.incidentscompose.ui.icons.AccountCircleIcon
+import com.example.incidentscompose.ui.icons.AccountCircleFilledIcon
+import com.example.incidentscompose.ui.icons.PeopleIcon
+import com.example.incidentscompose.ui.icons.PeopleFilledIcon
+
 import com.example.incidentscompose.navigation.IncidentMapKey
 import com.example.incidentscompose.navigation.MyIncidentListKey
 import com.example.incidentscompose.navigation.UserManagementKey
 import com.example.incidentscompose.navigation.IncidentListKey
 import androidx.navigation3.runtime.NavKey
 import com.example.incidentscompose.data.model.Role
+import com.example.incidentscompose.ui.icons.ListFilledIcon
+import com.example.incidentscompose.ui.icons.ListIcon
+import com.example.incidentscompose.ui.icons.MapFilledIcon
+import com.example.incidentscompose.ui.icons.MapIcon
 
 sealed class BottomNavItem(
     val key: NavKey,
     val titleResId: Int,
-    val unselectedIcon: Int,
-    val selectedIcon: Int,
+    val unselectedIcon: ImageVector,
+    val selectedIcon: ImageVector,
     val requiredRoles: Set<Role>
 ) {
     data object List : BottomNavItem(
         key = IncidentListKey,
         titleResId = R.string.list,
-        unselectedIcon = R.drawable.list_rounded_24px,
-        selectedIcon = R.drawable.list_rounded_filled_24px,
+        unselectedIcon = ListIcon,
+        selectedIcon = ListFilledIcon,
         requiredRoles = setOf(Role.OFFICIAL, Role.ADMIN)
     )
 
     data object Map : BottomNavItem(
         key = IncidentMapKey,
         titleResId = R.string.map,
-        unselectedIcon = R.drawable.map_rounded_24px,
-        selectedIcon = R.drawable.map_rounded_filled_24px,
+        unselectedIcon = MapIcon,
+        selectedIcon = MapFilledIcon,
         requiredRoles = setOf(Role.OFFICIAL, Role.ADMIN)
     )
 
     data object Users : BottomNavItem(
         key = UserManagementKey,
         titleResId = R.string.users,
-        unselectedIcon = R.drawable.users_rounded_24px,
-        selectedIcon = R.drawable.users_rounded_filled_24px,
+        unselectedIcon = PeopleIcon,
+        selectedIcon = PeopleFilledIcon,
         requiredRoles = setOf(Role.ADMIN)
     )
 
     data object Profile : BottomNavItem(
         key = MyIncidentListKey,
         titleResId = R.string.profile,
-        unselectedIcon = R.drawable.account_circle_rounded_24px,
-        selectedIcon = R.drawable.account_circle_rounded_filled_24px,
+        unselectedIcon = AccountCircleIcon,
+        selectedIcon = AccountCircleFilledIcon,
         requiredRoles = setOf(Role.OFFICIAL, Role.ADMIN)
     )
 }
@@ -96,7 +106,7 @@ fun BottomNavBar(
                 onClick = { onNavigateTo(item.key) },
                 icon = {
                     Icon(
-                        painter = painterResource(id = if (isSelected) item.selectedIcon else item.unselectedIcon),
+                        imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                         contentDescription = stringResource(item.titleResId),
                         modifier = Modifier.size(32.dp)
                     )

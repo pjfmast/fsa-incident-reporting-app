@@ -2,7 +2,6 @@ package com.example.incidentscompose.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import com.example.incidentscompose.R
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -11,10 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.incidentscompose.ui.icons.ArrowBackIcon
 
 @Composable
 fun TopNavBar(
@@ -41,7 +40,7 @@ fun TopNavBar(
                     .align(Alignment.CenterStart)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.arrow_back_rounded_24px),
+                    imageVector = ArrowBackIcon,
                     contentDescription = "Back",
                     tint = textColor,
                     modifier = Modifier.size(25.dp)

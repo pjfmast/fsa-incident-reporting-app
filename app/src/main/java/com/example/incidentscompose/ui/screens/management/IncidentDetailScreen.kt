@@ -4,27 +4,58 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.incidentscompose.R
 import com.example.incidentscompose.data.model.IncidentResponse
@@ -33,13 +64,19 @@ import com.example.incidentscompose.data.model.Status
 import com.example.incidentscompose.ui.components.IncidentMap
 import com.example.incidentscompose.ui.components.LoadingOverlay
 import com.example.incidentscompose.ui.components.TopNavBar
+import com.example.incidentscompose.ui.icons.ArrowDropDownIcon
+import com.example.incidentscompose.ui.icons.CheckCircleIcon
+import com.example.incidentscompose.ui.icons.CloseIcon
+import com.example.incidentscompose.ui.icons.DateRangeIcon
+import com.example.incidentscompose.ui.icons.DeleteIcon
+import com.example.incidentscompose.ui.icons.LocationOnIcon
+import com.example.incidentscompose.ui.icons.PersonIcon
 import com.example.incidentscompose.util.ImageUrlHelper
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatCategoryText
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisplay
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.IncidentDetailViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
 @Composable
@@ -96,7 +133,7 @@ fun IncidentDetailScreen(
             onDismissRequest = { showDeleteConfirmDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete_rounded_24px),
+                    imageVector = DeleteIcon,
                     contentDescription = null,
                     tint = Color(0xFFD32F2F),
                     modifier = Modifier.size(48.dp)
@@ -262,7 +299,7 @@ private fun FullscreenImageDialog(
                     )
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.close_rounded_24px),
+                    imageVector = CloseIcon,
                     contentDescription = "Close",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -341,7 +378,7 @@ private fun DeleteButton(onDelete: () -> Unit) {
         border = BorderStroke(1.5.dp, Color(0xFFD32F2F))
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.delete_rounded_24px),
+            imageVector = DeleteIcon,
             contentDescription = stringResource(R.string.delete_incident),
             modifier = Modifier.size(20.dp)
         )
@@ -438,7 +475,7 @@ private fun IncidentManagementHeaderCard(
                                 color = getPriorityColor(incident.priority)
                             )
                             Icon(
-                                painter = painterResource(id = R.drawable.arrow_drop_down_rounded_24px),
+                                imageVector = ArrowDropDownIcon,
                                 contentDescription = "Expand",
                                 tint = getPriorityColor(incident.priority)
                             )
@@ -514,7 +551,7 @@ private fun IncidentManagementHeaderCard(
                                 )
                             }
                             Icon(
-                                painter = painterResource(id = R.drawable.arrow_drop_down_rounded_24px),
+                                imageVector = ArrowDropDownIcon,
                                 contentDescription = "Expand",
                                 tint = getStatusColor(incident.status)
                             )
@@ -569,8 +606,7 @@ private fun IncidentManagementHeaderCard(
                     DateInfoRow(
                         label = stringResource(R.string.completed),
                         date = formatDateForDisplay(incident.completedAt),
-                        icon = ImageVector.vectorResource(id = R.drawable.check_circle_rounded_24px)
-
+                        icon = CheckCircleIcon
                     )
                 }
             }
@@ -582,7 +618,7 @@ private fun IncidentManagementHeaderCard(
 private fun DateInfoRow(
     label: String,
     date: String,
-    icon: ImageVector = ImageVector.vectorResource(id = R.drawable.date_range_rounded_24px)
+    icon: ImageVector = DateRangeIcon
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -643,7 +679,7 @@ private fun ReporterInfoCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.person_rounded_24px),
+                    imageVector = PersonIcon,
                     contentDescription = null,
                     tint = Color(0xFF6B7280),
                     modifier = Modifier.size(16.dp)
@@ -671,7 +707,7 @@ private fun ReporterInfoCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.person_rounded_24px),
+                                imageVector = PersonIcon,
                                 contentDescription = null,
                                 tint = Color(0xFFD97706),
                                 modifier = Modifier.size(32.dp)
@@ -701,7 +737,7 @@ private fun ReporterInfoCard(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.delete_rounded_24px),
+                                imageVector = DeleteIcon,
                                 contentDescription = null,
                                 tint = Color(0xFFDC2626),
                                 modifier = Modifier.size(32.dp)
@@ -982,7 +1018,7 @@ private fun IncidentLocationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.location_on_rounded_24px),
+                    imageVector = LocationOnIcon,
                     contentDescription = null,
                     tint = Color(0xFF6B7280),
                     modifier = Modifier.size(16.dp)

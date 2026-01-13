@@ -1,6 +1,7 @@
 package com.example.incidentscompose.ui.screens.incidents
 
 import android.content.Intent
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,13 +9,38 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,13 +48,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import android.provider.Settings
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.incidentscompose.R
@@ -40,13 +64,18 @@ import com.example.incidentscompose.navigation.MyIncidentListKey
 import com.example.incidentscompose.navigation.UserManagementKey
 import com.example.incidentscompose.ui.components.BottomNavBar
 import com.example.incidentscompose.ui.components.LoadingOverlay
+import com.example.incidentscompose.ui.icons.AddIcon
+import com.example.incidentscompose.ui.icons.LanguageIcon
+import com.example.incidentscompose.ui.icons.LogoutIcon
+import com.example.incidentscompose.ui.icons.PersonIcon
+import com.example.incidentscompose.ui.icons.SettingsIcon
+import com.example.incidentscompose.ui.icons.UserAttributesIcon
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatCategoryText
 import com.example.incidentscompose.util.IncidentDisplayHelper.formatDateForDisplay
 import com.example.incidentscompose.util.IncidentDisplayHelper.getStatusColor
 import com.example.incidentscompose.viewmodel.MyIncidentListViewModel
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun MyIncidentListScreen(
@@ -184,7 +213,7 @@ private fun MyIncidentListContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.person_rounded_24px),
+                            imageVector = PersonIcon,
                             contentDescription = "User Avatar",
                             tint = Color(0xFF0D47A1),
                             modifier = Modifier.size(32.dp)
@@ -218,7 +247,7 @@ private fun MyIncidentListContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.settings_rounded_24px),
+                            imageVector = SettingsIcon,
                             contentDescription = "Settings",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -302,7 +331,7 @@ private fun MyIncidentListContent(
             shape = CircleShape
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.add_rounded_24px),
+                imageVector = AddIcon,
                 contentDescription = stringResource(R.string.create_incident),
                 tint = Color.White,
                 modifier = Modifier.size(28.dp)
@@ -343,7 +372,7 @@ private fun MyIncidentListContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.user_attributes_rounded_24px),
+                                    imageVector = UserAttributesIcon,
                                     contentDescription = "User profile",
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -374,7 +403,7 @@ private fun MyIncidentListContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.language_rounded_24px),
+                                    imageVector = LanguageIcon,
                                     contentDescription = "Language settings",
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -402,7 +431,7 @@ private fun MyIncidentListContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.logout_rounded_24px),
+                                    imageVector = LogoutIcon,
                                     contentDescription = "Logout",
                                     tint = Color(0xFFD32F2F),
                                     modifier = Modifier.size(20.dp)
