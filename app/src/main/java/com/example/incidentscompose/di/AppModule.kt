@@ -50,7 +50,7 @@ val viewModelModule = module {
     viewModel { MyIncidentListViewModel (get(), get(), get(), get(), get()) }
     viewModel { MyIncidentDetailViewModel(get(), get()) }
     viewModel { RegisterViewModel(get()) }
-    viewModel { ReportIncidentViewModel(get()) }
+    viewModel { ReportIncidentViewModel(get(), get()) }
     viewModel { UserViewModel(get()) }
     viewModel { UserManagementViewModel(get(), get())}
     viewModel { IncidentManagementViewModel(get(), get())}

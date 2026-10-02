@@ -52,23 +52,25 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.maplibre.compose.camera.CameraAnimation
 import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.camera.CameraUpdate
 import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.interaction.ClickResult
+import org.maplibre.compose.interaction.MapInteractions
 import org.maplibre.compose.layers.CircleLayer
-import org.maplibre.compose.map.GestureOptions
-import org.maplibre.compose.map.MapOptions
 import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.rememberMapState
 import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
-import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.Feature.Companion.getStringProperty
 import org.maplibre.spatialk.geojson.FeatureCollection
 import org.maplibre.spatialk.geojson.Point
 import org.maplibre.spatialk.geojson.Position
 import kotlin.math.max
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
@@ -125,7 +127,7 @@ fun IncidentMap(
                 } catch (_: Exception) {
                     // Silently fail for periodic updates
                 }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }
@@ -143,16 +145,128 @@ fun IncidentMap(
 
     var selectedIncident by remember { mutableStateOf<IncidentResponse?>(null) }
 
-    val camera = rememberCameraState(
-        firstPosition = calculateInitialCamera(incidents, userLocation)
-    )
+    // Incidents' source - recompute when incidents change
+    val incidentsGeoJson = remember(
+        incidents,
+        incidents.map { it.id to it.latitude to it.longitude }
+    ) {
+        createIncidentsGeoJson(incidents).takeIf { it.features.isNotEmpty() }
+            ?: FeatureCollection(features = listOf(
+                Feature(
+                    geometry = Point(Position(0.0, 0.0)),
+                    properties = buildJsonObject { }
+                )
+            ))
+    }
+
+    val mapState = rememberMapState(
+        baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+        initialCameraPosition = calculateInitialCamera(incidents, userLocation)
+    ) {
+        val incidentsSource = rememberGeoJsonSource(
+            GeoJsonData.Features(incidentsGeoJson)
+        )
+
+        // Selected location source
+        val selectedLocationSource = selectedLocation?.let { location ->
+            val feature = Feature(
+                geometry = Point(Position(location.second, location.first)),
+                properties = buildJsonObject {}
+            )
+            val featureCollection = FeatureCollection(features = listOf(feature))
+            rememberGeoJsonSource(GeoJsonData.Features(featureCollection))
+        }
+
+        // User location source
+        val userLocationSource = userLocation?.let { location ->
+            val feature = Feature(
+                geometry = Point(Position(location.second, location.first)),
+                properties = buildJsonObject { put("type", "user-location") }
+            )
+            val featureCollection = FeatureCollection(features = listOf(feature))
+            rememberGeoJsonSource(GeoJsonData.Features(featureCollection))
+        }
+
+        // Incidents layers
+        CircleLayer(
+            id = "incidents-outer",
+            source = incidentsSource,
+            radius = const(10.dp),
+            color = const(Color.Red),
+            onClick = { features ->
+                val feature = features.firstOrNull()
+                val idString = feature?.getStringProperty("id")
+                val id = idString?.toLongOrNull()
+
+                if (id != null) {
+                    incidents.find { it.id == id }?.let { incident ->
+                        selectedIncident = incident
+                    }
+                }
+                ClickResult.Consume
+            }
+        )
+
+        CircleLayer(
+            id = "incidents-inner",
+            source = incidentsSource,
+            radius = const(4.dp),
+            color = const(Color.White)
+        )
+
+        // Selected location layers
+        selectedLocationSource?.let { source ->
+            CircleLayer(
+                id = "selected-location-outer",
+                source = source,
+                radius = const(12.dp),
+                color = const(Color(0xFF2196F3))
+            )
+            CircleLayer(
+                id = "selected-location-inner",
+                source = source,
+                radius = const(6.dp),
+                color = const(Color.White)
+            )
+        }
+
+        // User location layers
+        userLocationSource?.let { source ->
+            CircleLayer(
+                id = "user-location-outer",
+                source = source,
+                radius = const(10.dp),
+                color = const(Color(0xFF4CAF50)),
+                onClick = { _ ->
+                    userLocation?.let { location ->
+                        if (isLocationSelectionEnabled) {
+                            selectedLocation = location
+                            onLocationSelected(location.first, location.second)
+                        }
+                    }
+                    ClickResult.Consume
+                }
+            )
+            CircleLayer(
+                id = "user-location-inner",
+                source = source,
+                radius = const(4.dp),
+                color = const(Color.White)
+            )
+        }
+    }
 
     // Update camera when user location changes or when using current location
     LaunchedEffect(userLocation, incidents) {
         val newCamera = calculateInitialCamera(incidents, userLocation)
-        camera.animateTo(
-            finalPosition = newCamera,
-            duration = 0.5.seconds
+        mapState.animateCamera(
+            CameraUpdate(
+                target = newCamera.target,
+                zoom = newCamera.zoom,
+                bearing = newCamera.bearing,
+                tilt = newCamera.tilt
+            ),
+            CameraAnimation.Ease(duration = 0.5.seconds)
         )
     }
 
@@ -160,16 +274,36 @@ fun IncidentMap(
     LaunchedEffect(shouldUseCurrentLocation) {
         if (shouldUseCurrentLocation) {
             userLocation?.let { (lat, long) ->
-                camera.animateTo(
-                    finalPosition = CameraPosition(
+                mapState.animateCamera(
+                    CameraUpdate(
                         target = Position(
                             latitude = lat,
                             longitude = long
                         ),
                         zoom = 15.0
                     ),
-                    duration = 0.8.seconds
+                    CameraAnimation.Ease(duration = 0.8.seconds)
                 )
+            }
+        }
+    }
+
+    val mapInteractions = remember(isLocationSelectionEnabled) {
+        MapInteractions {
+            callbacks {
+                click {
+                    onUnhandled { clickEvent ->
+                        val position = clickEvent.position
+                        if (position != null && isLocationSelectionEnabled) {
+                            selectedLocation = position.latitude to position.longitude
+                            onLocationSelected(position.latitude, position.longitude)
+                            ClickResult.Consume
+                        } else {
+                            selectedIncident = null
+                            ClickResult.Pass
+                        }
+                    }
+                }
             }
         }
     }
@@ -190,136 +324,9 @@ fun IncidentMap(
                             }
                         }
                     },
-                baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-                cameraState = camera,
-                options = MapOptions(
-                    gestureOptions = GestureOptions(
-                        isTiltEnabled = true,
-                        isZoomEnabled = true,
-                        isRotateEnabled = true,
-                        isScrollEnabled = true
-                    )
-                ),
-                onMapClick = { position, _ ->
-                    if (isLocationSelectionEnabled) {
-                        selectedLocation = position.latitude to position.longitude
-                        onLocationSelected(position.latitude, position.longitude)
-                        ClickResult.Consume
-                    } else {
-                        selectedIncident = null
-                        ClickResult.Pass
-                    }
-                }
-            ) {
-
-                // Incidents source - recompute when incidents change
-                val incidentsGeoJson = remember(
-                    incidents,
-                    incidents.map { it.id to it.latitude to it.longitude }
-
-                ) {
-                    createIncidentsGeoJson(incidents).takeIf { it.features.isNotEmpty() }
-                        ?: FeatureCollection(features = listOf(
-                            Feature(
-                                geometry = Point(Position(0.0, 0.0)),
-                                properties = buildJsonObject { }
-                            )
-                        ))
-                }
-
-                val incidentsSource = rememberGeoJsonSource(
-                    GeoJsonData.Features(incidentsGeoJson)
-                )
-
-
-                // Selected location source
-                val selectedLocationSource = selectedLocation?.let { location ->
-                    val feature = Feature(
-                        geometry = Point(Position(location.second, location.first)),
-                        properties = buildJsonObject {}
-                    )
-                    val featureCollection = FeatureCollection(features = listOf(feature))
-                    rememberGeoJsonSource(GeoJsonData.Features(featureCollection))
-                }
-
-                // User location source
-                val userLocationSource = userLocation?.let { location ->
-                    val feature = Feature(
-                        geometry = Point(Position(location.second, location.first)),
-                        properties = buildJsonObject { put("type", "user-location") }
-                    )
-                    val featureCollection = FeatureCollection(features = listOf(feature))
-                    rememberGeoJsonSource(GeoJsonData.Features(featureCollection))
-                }
-
-                // Incidents layers
-                CircleLayer(
-                    id = "incidents-outer",
-                    source = incidentsSource,
-                    radius = const(10.dp),
-                    color = const(Color.Red),
-                    onClick = { features ->
-                        val feature = features.firstOrNull()
-                        val idString = feature?.getStringProperty("id")
-                        val id = idString?.toLongOrNull()
-
-                        if (id != null) {
-                            incidents.find { it.id == id }?.let { incident ->
-                                selectedIncident = incident
-                            }
-                        }
-                        ClickResult.Consume
-                    }
-                )
-
-                CircleLayer(
-                    id = "incidents-inner",
-                    source = incidentsSource,
-                    radius = const(4.dp),
-                    color = const(Color.White)
-                )
-
-                // Selected location layers
-                selectedLocationSource?.let { source ->
-                    CircleLayer(
-                        id = "selected-location-outer",
-                        source = source,
-                        radius = const(12.dp),
-                        color = const(Color(0xFF2196F3))
-                    )
-                    CircleLayer(
-                        id = "selected-location-inner",
-                        source = source,
-                        radius = const(6.dp),
-                        color = const(Color.White)
-                    )
-                }
-
-                // User location layers
-                userLocationSource?.let { source ->
-                    CircleLayer(
-                        id = "user-location-outer",
-                        source = source,
-                        radius = const(10.dp),
-                        color = const(Color(0xFF4CAF50)),
-                        onClick = {
-                            userLocation?.let { location ->
-                                if (isLocationSelectionEnabled) {
-                                    selectedLocation = location
-                                    onLocationSelected(location.first, location.second)
-                                }
-                            }
-                            ClickResult.Consume
-                        }
-                    )
-                    CircleLayer(
-                        id = "user-location-inner",
-                        source = source,
-                        radius = const(4.dp),
-                        color = const(Color.White)
-                    )
-                }
-            }
+                state = mapState,
+                interactions = mapInteractions
+            )
         } else {
             Column(
                 modifier = Modifier

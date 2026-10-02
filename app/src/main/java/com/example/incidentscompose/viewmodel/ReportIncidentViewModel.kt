@@ -1,16 +1,24 @@
 package com.example.incidentscompose.viewmodel
 
 import android.content.Context
-import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
-import com.example.incidentscompose.data.model.*
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
+import com.example.incidentscompose.data.model.ApiResult
+import com.example.incidentscompose.data.model.CreateIncidentRequest
+import com.example.incidentscompose.data.model.IncidentCategory
+import com.example.incidentscompose.data.model.IncidentResponse
+import com.example.incidentscompose.data.model.Priority
 import com.example.incidentscompose.data.repository.IncidentRepository
 import com.example.incidentscompose.util.PhotoUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+@Serializable
 data class ReportIncidentUiState(
     val selectedCategory: IncidentCategory = IncidentCategory.COMMUNAL,
     val description: String = "",
@@ -27,60 +35,79 @@ data class ReportIncidentUiState(
 )
 
 class ReportIncidentViewModel(
-    private val repository: IncidentRepository
+    private val repository: IncidentRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : BaseViewModel() {
 
-    private val _uiState = MutableStateFlow(ReportIncidentUiState())
+    private companion object {
+        const val UI_STATE_KEY = "report_incident_ui_state"
+    }
+
+    private val _uiState = MutableStateFlow(
+        savedStateHandle.get<String>(UI_STATE_KEY)?.let { jsonString ->
+            runCatching { Json.decodeFromString<ReportIncidentUiState>(jsonString) }.getOrNull()
+        } ?: ReportIncidentUiState()
+    )
     val uiState = _uiState.asStateFlow()
 
+    private fun updateState(block: (ReportIncidentUiState) -> ReportIncidentUiState) {
+        _uiState.update { currentState ->
+            val newState = block(currentState)
+            runCatching {
+                savedStateHandle[UI_STATE_KEY] = Json.encodeToString(newState)
+            }
+            newState
+        }
+    }
+
     fun updateCategory(category: IncidentCategory) =
-        _uiState.update { it.copy(selectedCategory = category) }
+        updateState { it.copy(selectedCategory = category) }
 
     fun updateDescription(description: String) =
-        _uiState.update { it.copy(description = description) }
+        updateState { it.copy(description = description) }
 
     fun addPhoto(uri: String) =
-        _uiState.update { it.copy(photos = it.photos + uri) }
+        updateState { it.copy(photos = it.photos + uri) }
 
     fun removePhoto(uri: String) =
-        _uiState.update { it.copy(photos = it.photos - uri) }
+        updateState { it.copy(photos = it.photos - uri) }
 
     fun updateLocation(latitude: Double, longitude: Double) =
-        _uiState.update {
+        updateState {
             it.copy(latitude = latitude, longitude = longitude, errorMessage = null)
         }
 
     fun clearLocation() =
-        _uiState.update { it.copy(latitude = null, longitude = null) }
+        updateState { it.copy(latitude = null, longitude = null) }
 
     fun showLocationError(message: String) =
-        _uiState.update { it.copy(errorMessage = message) }
+        updateState { it.copy(errorMessage = message) }
 
     fun requestUseCurrentLocation() =
-        _uiState.update {
+        updateState {
             it.copy(shouldRequestLocationPermission = true, shouldUseCurrentLocation = true)
         }
 
     fun onLocationPermissionHandled() =
-        _uiState.update { it.copy(shouldRequestLocationPermission = false) }
+        updateState { it.copy(shouldRequestLocationPermission = false) }
 
     fun onCurrentLocationUsed() =
-        _uiState.update { it.copy(shouldUseCurrentLocation = false) }
+        updateState { it.copy(shouldUseCurrentLocation = false) }
 
     fun showImageSourceDialog() =
-        _uiState.update { it.copy(showImageSourceDialog = true) }
+        updateState { it.copy(showImageSourceDialog = true) }
 
     fun dismissImageSourceDialog() =
-        _uiState.update { it.copy(showImageSourceDialog = false) }
+        updateState { it.copy(showImageSourceDialog = false) }
 
     fun dismissPermissionWarning() =
-        _uiState.update { it.copy(showPermissionDeniedWarning = false) }
+        updateState { it.copy(showPermissionDeniedWarning = false) }
 
     fun onPhotoPermissionResult(granted: Boolean) {
         if (granted) {
             showImageSourceDialog()
         } else {
-            _uiState.update { it.copy(showPermissionDeniedWarning = true) }
+            updateState { it.copy(showPermissionDeniedWarning = true) }
         }
     }
 
@@ -93,13 +120,13 @@ class ReportIncidentViewModel(
 
         // Validate description first
         if (state.description.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Please enter a description") }
+            updateState { it.copy(errorMessage = "Please enter a description") }
             return
         }
 
         // Validate a location is selected:
         if (latitude == null || longitude == null) {
-            _uiState.update { it.copy(errorMessage = "Please select a location") }
+            updateState { it.copy(errorMessage = "Please select a location") }
             return
         }
 
@@ -150,17 +177,17 @@ class ReportIncidentViewModel(
             }
         }
 
-        _uiState.update {
+        updateState {
             it.copy(showSuccessDialog = true, createdIncident = incident, errorMessage = null)
         }
     }
 
     private fun setError(message: String) =
-        _uiState.update { it.copy(errorMessage = message) }
+        updateState { it.copy(errorMessage = message) }
 
     fun dismissSuccessDialog() =
-        _uiState.update { it.copy(showSuccessDialog = false) }
+        updateState { it.copy(showSuccessDialog = false) }
 
     fun resetForm() =
-        _uiState.update { ReportIncidentUiState(selectedCategory = IncidentCategory.COMMUNAL) }
+        updateState { ReportIncidentUiState(selectedCategory = IncidentCategory.COMMUNAL) }
 }
